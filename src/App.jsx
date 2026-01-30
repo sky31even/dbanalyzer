@@ -291,7 +291,7 @@ function App() {
         useCORS: true, // Allow loading cross-origin images (covers)
         allowTaint: true,
         backgroundColor: '#f5f5f4', // Match bg-doubanBg
-        scale: 2, // Higher resolution
+        scale: 3, // Higher resolution for mobile
         windowWidth: element.scrollWidth, // Ensure correct width capture
         windowHeight: element.scrollHeight,
         onclone: (clonedDoc) => {
@@ -302,12 +302,39 @@ function App() {
              svg.setAttribute('width', '100%');
            });
            
-           // Force recent items to be visible in clone
-           const hiddenItems = clonedDoc.querySelectorAll('.hidden.md\\:flex');
-           hiddenItems.forEach(el => {
-             el.classList.remove('hidden', 'md:flex');
-             el.classList.add('flex');
-           });
+           // Force recent items logic in screenshot
+           // If on mobile, ensure we only show 3 items even in screenshot
+           const isMobileClone = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+           if (isMobileClone) {
+             const allRecentItems = clonedDoc.querySelectorAll('.flex-shrink-0.w-20.flex.flex-col.gap-1.group');
+             allRecentItems.forEach((el, index) => {
+               // In each group of 5 (since we map slice(0,5)), index % 5 gives position
+               // We need to find the parent container to know which group it belongs to, 
+               // but simpler: just hide if index in that container > 2.
+               // Actually, the selector selects ALL items across all categories.
+               // The structure is: div.flex.gap-4 > items
+               
+               const parent = el.parentElement;
+               const siblings = Array.from(parent.children).filter(c => c.classList.contains('group'));
+               const position = siblings.indexOf(el);
+               
+               if (position >= 3) {
+                 el.style.display = 'none';
+                 el.classList.add('hidden');
+                 el.classList.remove('flex');
+               } else {
+                 el.style.display = 'flex';
+                 el.classList.remove('hidden');
+               }
+             });
+           } else {
+             // Desktop behavior: show all (up to 5)
+             const hiddenItems = clonedDoc.querySelectorAll('.hidden.md\\:flex');
+             hiddenItems.forEach(el => {
+               el.classList.remove('hidden', 'md:flex');
+               el.classList.add('flex');
+             });
+           }
         }
       });
       
@@ -469,7 +496,7 @@ function App() {
                       const maxTotal = Math.max(...data.map(d => (d.movie||0) + (d.tv||0) + (d.book||0) + (d.music||0)));
                       const scaleY = 250 / (maxTotal || 1); // Leave 50px for labels
                       const barWidth = 10;
-                      const gap = 5;
+                      const gap = 0; // Remove gap
                       
                       return data.map((d, i) => {
                         const x = i * (barWidth + gap);
