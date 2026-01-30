@@ -201,6 +201,7 @@ function App() {
   const [isSnapshotting, setIsSnapshotting] = useState(false);
   const [error, setError] = useState('');
   const [hiddenSeries, setHiddenSeries] = useState([]);
+  const [generatedImage, setGeneratedImage] = useState(null);
 
   const favoriteYear = useMemo(() => {
     if (!data || data.length === 0) return null;
@@ -278,10 +279,19 @@ function App() {
         scale: 2, // Higher resolution
       });
 
-      const link = document.createElement('a');
-      link.download = `dbanalyzer-${username}-${new Date().toISOString().split('T')[0]}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
+      const dataUrl = canvas.toDataURL('image/png');
+      
+      // Check if mobile device
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      if (isMobile) {
+        setGeneratedImage(dataUrl);
+      } else {
+        const link = document.createElement('a');
+        link.download = `dbanalyzer-${username}-${new Date().toISOString().split('T')[0]}.png`;
+        link.href = dataUrl;
+        link.click();
+      }
     } catch (err) {
       console.error('Failed to save image:', err);
       alert('保存图片失败，请稍后重试');
@@ -355,21 +365,27 @@ function App() {
               </div>
 
               {/* Stats Text */}
-              <div className="flex-1 text-center md:text-left">
-                <p className="text-lg text-stone-700 leading-loose font-medium">
-                  你好！<span className="font-bold">{userProfile.name}</span>
+              <div className="flex-1 text-left">
+                <div className="text-lg text-stone-700 leading-loose font-medium flex flex-col gap-2">
+                  <div>
+                    你好！<span className="font-bold">{userProfile.name}</span>
+                  </div>
                   {userProfile.registrationDate && (
-                    <> 注册于 <span className="font-bold">{userProfile.registrationDate}</span></>
+                    <div>注册于 <span className="font-bold">{userProfile.registrationDate}</span></div>
                   )}
-                  <br />
-                  共计标注 
-                  电影 <span className="font-bold text-doubanBlue">{summary?.movie?.total || 0}</span> 部，
-                  电视剧 <span className="font-bold text-purple-600">{summary?.tv?.total || 0}</span> 部，
-                  图书 <span className="font-bold text-doubanGreen">{summary?.book?.total || 0}</span> 本，
-                  音乐 <span className="font-bold text-doubanPeach">{summary?.music?.total || 0}</span> 首；
-                  <br />
-                  根据你的标注，<span className="font-bold text-stone-900 text-2xl">{favoriteYear}</span>是你最爱的一年。
-                </p>
+                  <div>
+                    共计标注：
+                  </div>
+                  <div className="pl-0">
+                    电影 <span className="font-bold text-doubanBlue">{summary?.movie?.total || 0}</span> 部，
+                    电视剧 <span className="font-bold text-purple-600">{summary?.tv?.total || 0}</span> 部，
+                    图书 <span className="font-bold text-doubanGreen">{summary?.book?.total || 0}</span> 本，
+                    音乐 <span className="font-bold text-doubanPeach">{summary?.music?.total || 0}</span> 首；
+                  </div>
+                  <div className="mt-2">
+                    根据你的标注，<span className="font-bold text-stone-900 text-2xl">{favoriteYear}</span>是你最爱的一年。
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -413,8 +429,8 @@ function App() {
                   data={data}
                   margin={{
                     top: 20,
-                    right: 30,
-                    left: 20,
+                    right: 0,
+                    left: 0,
                     bottom: 5,
                   }}
                 >
@@ -528,6 +544,22 @@ function App() {
             <QRCodeCanvas value="https://dbanalyzer.pages.dev/" size={100} />
           </div>
           <p className="text-stone-500 text-sm font-medium">扫码查看我的艺术年轮</p>
+        </div>
+      )}
+
+      {/* Image Preview Modal for Mobile */}
+      {generatedImage && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex flex-col items-center justify-center p-4" onClick={() => setGeneratedImage(null)}>
+          <div className="bg-white p-2 rounded-lg max-h-[80vh] overflow-auto max-w-full" onClick={e => e.stopPropagation()}>
+            <img src={generatedImage} alt="Generated Analysis" className="w-full h-auto" />
+          </div>
+          <p className="text-white mt-4 text-center font-medium">长按图片保存到相册</p>
+          <button 
+            className="mt-4 px-6 py-2 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors"
+            onClick={() => setGeneratedImage(null)}
+          >
+            关闭
+          </button>
         </div>
       )}
     </div>
