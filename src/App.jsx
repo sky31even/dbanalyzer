@@ -154,7 +154,7 @@ const SummarySection = ({ title, data, color, bgColor }) => {
         <div className="text-sm text-stone-500 mb-3">最近标注</div>
         <div className="flex gap-4">
           {data.recent.slice(0, 5).map((item, i) => (
-            <div key={i} className={`flex-shrink-0 w-20 flex flex-col gap-1 group ${i >= 3 ? 'hidden md:flex' : 'flex'}`} title={item.title}>
+            <div key={i} className={`flex-shrink-0 w-20 flex flex-col gap-1 group ${(i >= 3 && !window.isSnapshotting) ? 'hidden md:flex' : 'flex'}`} title={item.title}>
               <a href={item.url} target="_blank" rel="noopener noreferrer" className="block">
                 <div className="w-20 h-28 bg-stone-100 rounded overflow-hidden shadow-sm group-hover:shadow-md transition-shadow relative">
                   {item.cover ? (
@@ -262,14 +262,29 @@ function App() {
   const handleSaveImage = async () => {
     try {
       setIsSnapshotting(true);
+      window.isSnapshotting = true; // Global flag for non-React access
+      
       // Wait for React to render the snapshot view
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 200));
 
       // Find the main content container
       const element = document.querySelector('.min-h-screen');
       if (!element) {
         setIsSnapshotting(false);
+        window.isSnapshotting = false;
         return;
+      }
+      
+      // Force container to fixed width for consistent screenshot
+      const originalStyle = element.style.cssText;
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      // On mobile, force a standard width (e.g. 375px or 400px) to prevent layout shifts
+      // But ensure it's wide enough for the content
+      if (isMobile) {
+        element.style.width = '100%'; 
+        element.style.maxWidth = '100%';
+        element.style.padding = '20px'; // Ensure consistent padding
       }
 
       const canvas = await html2canvas(element, {
@@ -279,12 +294,32 @@ function App() {
         scale: 2, // Higher resolution
         windowWidth: element.scrollWidth, // Ensure correct width capture
         windowHeight: element.scrollHeight,
+        onclone: (clonedDoc) => {
+           // Ensure SVG takes full width in clone
+           const svgs = clonedDoc.querySelectorAll('svg');
+           svgs.forEach(svg => {
+             svg.style.width = '100%';
+             svg.setAttribute('width', '100%');
+           });
+           
+           // Force recent items to be visible in clone
+           const hiddenItems = clonedDoc.querySelectorAll('.hidden.md\\:flex');
+           hiddenItems.forEach(el => {
+             el.classList.remove('hidden', 'md:flex');
+             el.classList.add('flex');
+           });
+        }
       });
+      
+      // Restore styles
+      if (isMobile) {
+        element.style.cssText = originalStyle;
+      }
 
       const dataUrl = canvas.toDataURL('image/png');
       
       // Check if mobile device
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      // isMobile is already defined above
       
       if (isMobile) {
         setGeneratedImage(dataUrl);
@@ -299,6 +334,7 @@ function App() {
       alert('保存图片失败，请稍后重试');
     } finally {
       setIsSnapshotting(false);
+      window.isSnapshotting = false;
     }
   };
 
@@ -399,101 +435,166 @@ function App() {
             
             {/* Static Legend for Screenshot - Using SVG for pixel-perfect rendering */}
             {isSnapshotting ? (
-              <div className="mb-6">
-                <svg width="400" height="24" style={{ display: 'block' }}>
-                  <g transform="translate(0, 12)">
-                    {/* 电影 */}
-                    <circle cx="6" cy="0" r="6" fill="#2AA3F4" />
-                    <text x="20" y="5" fontSize="14" fill="#57534e" fontFamily="sans-serif">电影</text>
-                    
-                    {/* 电视剧 */}
-                    <circle cx="80" cy="0" r="6" fill="#7c3aed" />
-                    <text x="94" y="5" fontSize="14" fill="#57534e" fontFamily="sans-serif">电视剧</text>
-                    
-                    {/* 图书 */}
-                    <circle cx="166" cy="0" r="6" fill="#2FA44F" />
-                    <text x="180" y="5" fontSize="14" fill="#57534e" fontFamily="sans-serif">图书</text>
-                    
-                    {/* 音乐 */}
-                    <circle cx="240" cy="0" r="6" fill="#F6C28B" />
-                    <text x="254" y="5" fontSize="14" fill="#57534e" fontFamily="sans-serif">音乐</text>
-                  </g>
-                </svg>
-              </div>
+              <>
+                <div className="mb-6">
+                  <svg width="400" height="24" style={{ display: 'block' }}>
+                    <g transform="translate(0, 12)">
+                      {/* 电影 */}
+                      <circle cx="6" cy="0" r="6" fill="#2AA3F4" />
+                      <text x="20" y="5" fontSize="14" fill="#57534e" fontFamily="sans-serif">电影</text>
+                      
+                      {/* 电视剧 */}
+                      <circle cx="80" cy="0" r="6" fill="#7c3aed" />
+                      <text x="94" y="5" fontSize="14" fill="#57534e" fontFamily="sans-serif">电视剧</text>
+                      
+                      {/* 图书 */}
+                      <circle cx="166" cy="0" r="6" fill="#2FA44F" />
+                      <text x="180" y="5" fontSize="14" fill="#57534e" fontFamily="sans-serif">图书</text>
+                      
+                      {/* 音乐 */}
+                      <circle cx="240" cy="0" r="6" fill="#F6C28B" />
+                      <text x="254" y="5" fontSize="14" fill="#57534e" fontFamily="sans-serif">音乐</text>
+                    </g>
+                  </svg>
+                </div>
+                {/* SVG Bar Chart for Screenshot */}
+                <div className="w-full">
+                  <svg 
+                    viewBox={`0 0 ${data.length * 15} 300`} 
+                    preserveAspectRatio="none"
+                    style={{ width: '100%', height: '300px' }}
+                  >
+                    {(() => {
+                      // Calculate max total count for scaling
+                      const maxTotal = Math.max(...data.map(d => (d.movie||0) + (d.tv||0) + (d.book||0) + (d.music||0)));
+                      const scaleY = 250 / (maxTotal || 1); // Leave 50px for labels
+                      const barWidth = 10;
+                      const gap = 5;
+                      
+                      return data.map((d, i) => {
+                        const x = i * (barWidth + gap);
+                        let currentY = 280; // Start from bottom (above x-axis labels)
+                        
+                        // Render bars in stack order: music -> book -> tv -> movie (bottom to top visually)
+                        const renderBar = (count, color) => {
+                          if (!count) return null;
+                          const height = count * scaleY;
+                          currentY -= height;
+                          return (
+                            <rect 
+                              key={color}
+                              x={x} 
+                              y={currentY} 
+                              width={barWidth} 
+                              height={height} 
+                              fill={color} 
+                              rx={barWidth/2}
+                            />
+                          );
+                        };
+
+                        return (
+                          <g key={d.year}>
+                            {renderBar(d.music, '#F6C28B')}
+                            {renderBar(d.book, '#2FA44F')}
+                            {renderBar(d.tv, '#7c3aed')}
+                            {renderBar(d.movie, '#2AA3F4')}
+                            
+                            {/* X Axis Label every ~10 years */}
+                            {i % Math.ceil(data.length / 10) === 0 && (
+                              <text 
+                                x={x + barWidth/2} 
+                                y="295" 
+                                fontSize="10" 
+                                fill="#666" 
+                                textAnchor="middle"
+                              >
+                                {d.year}
+                              </text>
+                            )}
+                          </g>
+                        );
+                      });
+                    })()}
+                  </svg>
+                </div>
+              </>
             ) : (
-              <div className="interactive-legend">
-                <CustomLegend hiddenSeries={hiddenSeries} toggleSeries={toggleSeries} />
-              </div>
+              <>
+                <div className="interactive-legend">
+                  <CustomLegend hiddenSeries={hiddenSeries} toggleSeries={toggleSeries} />
+                </div>
+                <div className="h-[400px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={data}
+                      margin={{
+                        top: 20,
+                        right: 0,
+                        left: 0,
+                        bottom: 5,
+                      }}
+                    >
+                      <defs>
+                        <linearGradient id="cursor-gradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="rgba(0,0,0,0)" />
+                          <stop offset="20%" stopColor="rgba(0,0,0,0.1)" />
+                          <stop offset="100%" stopColor="rgba(0,0,0,0.1)" />
+                        </linearGradient>
+                      </defs>
+                      <XAxis 
+                        dataKey="year" 
+                        interval={data ? Math.ceil(data.length / 10) : 0} 
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: '#666', fontSize: 12 }}
+                        dy={10}
+                      />
+                      <Tooltip 
+                        cursor={<CustomCursor />}
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                      />
+                      <Bar 
+                        dataKey="movie" 
+                        name="电影" 
+                        fill="#2AA3F4" 
+                        stackId="a" 
+                        shape={<CustomBar hiddenSeries={hiddenSeries} />} 
+                        barSize={12} 
+                        hide={hiddenSeries.includes('movie')}
+                      />
+                      <Bar 
+                        dataKey="tv" 
+                        name="电视剧" 
+                        fill="#7c3aed" 
+                        stackId="a" 
+                        shape={<CustomBar hiddenSeries={hiddenSeries} />} 
+                        barSize={12} 
+                        hide={hiddenSeries.includes('tv')}
+                      />
+                      <Bar 
+                        dataKey="book" 
+                        name="图书" 
+                        fill="#2FA44F" 
+                        stackId="a" 
+                        shape={<CustomBar hiddenSeries={hiddenSeries} />} 
+                        barSize={12} 
+                        hide={hiddenSeries.includes('book')}
+                      />
+                      <Bar 
+                        dataKey="music" 
+                        name="音乐" 
+                        fill="#F6C28B" 
+                        stackId="a" 
+                        shape={<CustomBar hiddenSeries={hiddenSeries} />} 
+                        barSize={12} 
+                        hide={hiddenSeries.includes('music')}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </>
             )}
-            <div className="h-[400px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={data}
-                  margin={{
-                    top: 20,
-                    right: 0,
-                    left: 0,
-                    bottom: 5,
-                  }}
-                >
-                  <defs>
-                    <linearGradient id="cursor-gradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="rgba(0,0,0,0)" />
-                      <stop offset="20%" stopColor="rgba(0,0,0,0.1)" />
-                      <stop offset="100%" stopColor="rgba(0,0,0,0.1)" />
-                    </linearGradient>
-                  </defs>
-                  <XAxis 
-                    dataKey="year" 
-                    interval={data ? Math.ceil(data.length / 10) : 0} 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: '#666', fontSize: 12 }}
-                    dy={10}
-                  />
-                  <Tooltip 
-                    cursor={<CustomCursor />}
-                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                  />
-                  <Bar 
-                    dataKey="movie" 
-                    name="电影" 
-                    fill="#2AA3F4" 
-                    stackId="a" 
-                    shape={<CustomBar hiddenSeries={hiddenSeries} />} 
-                    barSize={12} 
-                    hide={hiddenSeries.includes('movie')}
-                  />
-                  <Bar 
-                    dataKey="tv" 
-                    name="电视剧" 
-                    fill="#7c3aed" 
-                    stackId="a" 
-                    shape={<CustomBar hiddenSeries={hiddenSeries} />} 
-                    barSize={12} 
-                    hide={hiddenSeries.includes('tv')}
-                  />
-                  <Bar 
-                    dataKey="book" 
-                    name="图书" 
-                    fill="#2FA44F" 
-                    stackId="a" 
-                    shape={<CustomBar hiddenSeries={hiddenSeries} />} 
-                    barSize={12} 
-                    hide={hiddenSeries.includes('book')}
-                  />
-                  <Bar 
-                    dataKey="music" 
-                    name="音乐" 
-                    fill="#F6C28B" 
-                    stackId="a" 
-                    shape={<CustomBar hiddenSeries={hiddenSeries} />} 
-                    barSize={12} 
-                    hide={hiddenSeries.includes('music')}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
           </div>
 
           {/* Summary Stats Section */}
