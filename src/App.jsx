@@ -136,9 +136,9 @@ const SummarySection = ({ title, data, color, bgColor, isSnapshotting }) => {
               const height = maxCount > 0 ? (count / maxCount) * 100 : 0;
               return (
                 <div key={star} className="flex-1 flex flex-col items-center gap-1 group relative h-full justify-end">
-                  <div className="text-xs text-stone-400 opacity-0 group-hover:opacity-100 absolute -top-4">{count}</div>
+                  <div className="text-xs text-stone-400 mb-0.5">{count > 0 ? count : ''}</div>
                   <div 
-                    className="w-full rounded-t-sm transition-all duration-500 opacity-60 hover:opacity-100"
+                    className="w-full rounded-t-sm transition-all duration-500 opacity-80 hover:opacity-100"
                     style={{ height: `${Math.max(height, 2)}%`, backgroundColor: bgColor }}
                   ></div>
                   <div className="text-xs text-stone-400">{star}★</div>
@@ -150,11 +150,11 @@ const SummarySection = ({ title, data, color, bgColor, isSnapshotting }) => {
       </div>
 
       {/* Right: Recent Covers */}
-      <div className="flex-1 overflow-hidden pb-2">
+      <div className="flex-1 overflow-visible pb-2">
         <div className="text-sm text-stone-500 mb-3">最近标注</div>
-        <div className={isSnapshotting ? "grid grid-cols-3 gap-4" : "flex gap-4 overflow-x-auto"}>
+        <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
           {data.recent.slice(0, 5).map((item, i) => (
-            <div key={i} className={`flex-shrink-0 w-20 flex flex-col gap-1 group ${(!isSnapshotting && i >= 3) ? 'hidden md:flex' : 'flex'}`} title={item.title}>
+            <div key={i} className={`flex-shrink-0 w-20 flex flex-col gap-1 group`} title={item.title}>
               <a href={item.url} target="_blank" rel="noopener noreferrer" className="block">
                 <div className="w-20 h-28 bg-stone-100 rounded overflow-hidden shadow-sm group-hover:shadow-md transition-shadow relative">
                   {item.cover ? (
@@ -201,7 +201,6 @@ function App() {
   const [isSnapshotting, setIsSnapshotting] = useState(false);
   const [error, setError] = useState('');
   const [hiddenSeries, setHiddenSeries] = useState([]);
-  const [generatedImage, setGeneratedImage] = useState(null);
 
   const favoriteYear = useMemo(() => {
     if (!data || data.length === 0) return null;
@@ -256,75 +255,6 @@ function App() {
     } finally {
       setLoading(false);
       setStatus('');
-    }
-  };
-
-  const handleSaveImage = async () => {
-    // Check if mobile device
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-    if (isMobile) {
-      // Mobile Save Logic
-      try {
-        setIsSnapshotting(true);
-        // Wait for React to render the snapshot view
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        // Find the main content container
-        const element = document.querySelector('.min-h-screen');
-        if (!element) {
-          setIsSnapshotting(false);
-          return;
-        }
-
-        const canvas = await html2canvas(element, {
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: '#f5f5f4',
-          scale: 2,
-          windowWidth: element.scrollWidth, // Ensure correct width capture for mobile
-          windowHeight: element.scrollHeight,
-        });
-
-        const dataUrl = canvas.toDataURL('image/png');
-        setGeneratedImage(dataUrl);
-      } catch (err) {
-        console.error('Mobile save failed:', err);
-        alert('生成图片失败，请稍后重试');
-      } finally {
-        setIsSnapshotting(false);
-      }
-    } else {
-      // Web Save Logic
-      try {
-        setIsSnapshotting(true);
-        // Wait for React to render the snapshot view
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        // Find the main content container
-        const element = document.querySelector('.min-h-screen');
-        if (!element) {
-          setIsSnapshotting(false);
-          return;
-        }
-
-        const canvas = await html2canvas(element, {
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: '#f5f5f4',
-          scale: 2,
-        });
-
-        const link = document.createElement('a');
-        link.download = `dbanalyzer-${username}-${new Date().toISOString().split('T')[0]}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-      } catch (err) {
-        console.error('Web save failed:', err);
-        alert('保存图片失败，请稍后重试');
-      } finally {
-        setIsSnapshotting(false);
-      }
     }
   };
 
@@ -600,64 +530,24 @@ function App() {
                 <SummarySection title="图书" data={summary.book} color="text-doubanGreen" bgColor="#2FA44F" isSnapshotting={isSnapshotting} />
                 <SummarySection title="音乐" data={summary.music} color="text-doubanPeach" bgColor="#F6C28B" isSnapshotting={isSnapshotting} />
               </div>
-              
-              {!isSnapshotting && (
-                <div className="flex justify-center mt-8">
-                  <button
-                    onClick={handleSaveImage}
-                    className="save-share-btn flex items-center gap-2 px-6 py-3 bg-stone-800 text-white rounded-full hover:bg-stone-700 transition-colors shadow-md"
-                  >
-                    <span>📸</span>
-                    <span>保存 & 分享我的结果</span>
-                  </button>
-                </div>
-              )}
             </div>
           )}
         </div>
       )}
 
       {/* Footer */}
-      {!isSnapshotting && (
-        <footer className="mt-16 mb-8 text-stone-400 github-footer">
-          <a 
-            href="https://github.com/sky31even/dbanalyzer" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-          >
-            <div className="bg-black text-white p-1 rounded-full">
-              <Github size={16} fill="white" />
-            </div>
-          </a>
-        </footer>
-      )}
-
-      {/* QR Code Section for Screenshot */}
-      {isSnapshotting && (
-        <div className="qr-code-section flex flex-col items-center gap-4 mt-8 pb-8">
-          <div className="p-2 bg-white rounded-lg shadow-sm">
-            <QRCodeCanvas value="https://dbanalyzer.pages.dev/" size={100} />
+      <footer className="w-full text-center mt-12 mb-8 text-stone-400 text-sm flex flex-col items-center gap-2">
+        <a 
+          href="https://github.com/sky31even/dbanalyzer" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+        >
+          <div className="bg-black text-white p-1 rounded-full">
+            <Github size={16} fill="white" />
           </div>
-          <p className="text-stone-500 text-sm font-medium">扫码查看我的艺术年轮</p>
-        </div>
-      )}
-
-      {/* Image Preview Modal for Mobile */}
-      {generatedImage && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex flex-col items-center justify-center p-4" onClick={() => setGeneratedImage(null)}>
-          <div className="bg-white p-2 rounded-lg max-h-[80vh] overflow-auto max-w-full" onClick={e => e.stopPropagation()}>
-            <img src={generatedImage} alt="Generated Analysis" className="w-full h-auto" />
-          </div>
-          <p className="text-white mt-4 text-center font-medium">长按图片保存到相册</p>
-          <button 
-            className="mt-4 px-6 py-2 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors"
-            onClick={() => setGeneratedImage(null)}
-          >
-            关闭
-          </button>
-        </div>
-      )}
+        </a>
+      </footer>
     </div>
   );
 }
