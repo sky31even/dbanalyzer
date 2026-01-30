@@ -211,7 +211,29 @@ const computeStats = (items, totalCount) => {
   };
 };
 
+const fetchUserProfile = async (username) => {
+  const url = `/api/douban/people/${username}/`;
+  const html = await fetchUrl(url);
+  if (!html) return null;
+
+  const $ = cheerio.load(html);
+  
+  // Registration Date
+  const text = $('body').text();
+  const dateMatch = text.match(/(\d{4}-\d{2}-\d{2})\s*加入/);
+  const registrationDate = dateMatch ? dateMatch[1] : null;
+
+  // Name
+  const name = $('title').text().replace(' (豆瓣)', '').trim();
+
+  // Avatar
+  const avatar = $('.basic-info img').attr('src') || $('.pic img').attr('src');
+
+  return { registrationDate, name, avatar };
+};
+
 export const fetchDoubanData = async (username, onProgress) => {
+  const userProfile = await fetchUserProfile(username);
   const [moviesAndTV, books, music] = await Promise.all([
     fetchCategory(username, 'movie', '/api/movie', parseMovie, onProgress),
     fetchCategory(username, 'book', '/api/book', parseBook, onProgress),
@@ -264,6 +286,7 @@ export const fetchDoubanData = async (username, onProgress) => {
       tv: { ...tvStats, label: '电视剧' },
       book: { ...bookStats, label: '图书' },
       music: { ...musicStats, label: '音乐' }
-    }
+    },
+    userProfile
   };
 };

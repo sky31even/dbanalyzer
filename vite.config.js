@@ -82,6 +82,15 @@ export default defineConfig({
           'Referer': 'https://music.douban.com',
           'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         }
+      },
+      '/api/douban': {
+        target: 'https://www.douban.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/douban/, ''),
+        headers: {
+          'Referer': 'https://www.douban.com',
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
       }
     }
   }

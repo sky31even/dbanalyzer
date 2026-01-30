@@ -1,5 +1,8 @@
-import { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Rectangle } from 'recharts';
+import { Github } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import { QRCodeCanvas } from 'qrcode.react';
 import { fetchDoubanData } from './services/douban';
 
 const CustomBar = (props) => {
@@ -76,14 +79,24 @@ const CustomLegend = ({ hiddenSeries, toggleSeries }) => {
       {items.map(item => (
         <div 
           key={item.key} 
-          className={`flex items-center gap-2 cursor-pointer transition-opacity ${hiddenSeries.includes(item.key) ? 'opacity-50 grayscale' : ''}`}
+          className={`cursor-pointer transition-opacity relative ${hiddenSeries.includes(item.key) ? 'opacity-50 grayscale' : ''}`}
           onClick={() => toggleSeries(item.key)}
+          style={{ paddingLeft: '18px', minHeight: '20px' }}
         >
+          {/* Using Absolute Positioning for precise html2canvas rendering */}
           <div 
-            className="w-3 h-3 rounded-full" 
-            style={{ backgroundColor: item.color }}
+            style={{ 
+              position: 'absolute',
+              left: 0,
+              top: '50%',
+              marginTop: '-6px',
+              width: '12px', 
+              height: '12px', 
+              borderRadius: '50%', 
+              backgroundColor: item.color 
+            }} 
           />
-          <span className="text-sm text-stone-600">{item.label}</span>
+          <span className="text-sm text-stone-600" style={{ lineHeight: '20px', display: 'inline-block' }}>{item.label}</span>
         </div>
       ))}
     </div>
@@ -96,6 +109,12 @@ const SummarySection = ({ title, data, color, bgColor }) => {
   // Calculate max value for distribution bar
   const maxCount = Math.max(...Object.values(data.distribution));
 
+  const getVerb = (title) => {
+    if (title === '图书') return '读过';
+    if (title === '音乐') return '听过';
+    return '看过';
+  };
+
   return (
     <div className="flex flex-col md:flex-row gap-6 py-8 border-t border-stone-100 last:border-0">
       {/* Left: Category Name */}
@@ -106,7 +125,7 @@ const SummarySection = ({ title, data, color, bgColor }) => {
       {/* Middle: Stats */}
       <div className="w-full md:w-64 flex-shrink-0 flex flex-col gap-4">
         <div className="text-stone-600">
-          共计看过/读过 <span className="font-bold text-stone-800">{data.total}</span>
+          共计{getVerb(title)} <span className="font-bold text-stone-800">{data.total}</span>
         </div>
         
         <div className="flex flex-col gap-2">
@@ -133,7 +152,7 @@ const SummarySection = ({ title, data, color, bgColor }) => {
       {/* Right: Recent Covers */}
       <div className="flex-1 overflow-x-auto pb-2">
         <div className="text-sm text-stone-500 mb-3">最近标注</div>
-        <div className="flex justify-between gap-4">
+        <div className="flex gap-4">
           {data.recent.slice(0, 5).map((item, i) => (
             <div key={i} className="flex-shrink-0 w-20 flex flex-col gap-1 group" title={item.title}>
               <a href={item.url} target="_blank" rel="noopener noreferrer" className="block">
@@ -159,7 +178,9 @@ const SummarySection = ({ title, data, color, bgColor }) => {
                     </div>
                   )}
                 </div>
-                <div className="text-xs text-stone-600 w-full text-center line-clamp-2 min-h-[2.5rem] leading-tight mt-1 overflow-hidden px-1 group-hover:text-doubanBlue transition-colors">{item.title}</div>
+                <div className="text-xs text-stone-600 w-full text-center leading-tight mt-1 px-1 group-hover:text-doubanBlue transition-colors break-words">
+                  {item.title.length > 12 ? item.title.slice(0, 11) + '...' : item.title}
+                </div>
               </a>
             </div>
           ))}
@@ -176,8 +197,24 @@ function App() {
   const [status, setStatus] = useState('');
   const [data, setData] = useState(null);
   const [summary, setSummary] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
+  const [isSnapshotting, setIsSnapshotting] = useState(false);
   const [error, setError] = useState('');
   const [hiddenSeries, setHiddenSeries] = useState([]);
+
+  const favoriteYear = useMemo(() => {
+    if (!data || data.length === 0) return null;
+    let maxCount = 0;
+    let maxYear = null;
+    data.forEach(item => {
+      const count = (item.movie || 0) + (item.tv || 0) + (item.book || 0) + (item.music || 0);
+      if (count > maxCount) {
+        maxCount = count;
+        maxYear = item.year;
+      }
+    });
+    return maxYear;
+  }, [data]);
 
   const toggleSeries = (dataKey) => {
     setHiddenSeries(prev => 
@@ -210,6 +247,7 @@ function App() {
       } else {
         setData(result.yearData);
         setSummary(result.summary);
+        setUserProfile(result.userProfile);
       }
     } catch (err) {
       console.error(err);
@@ -220,8 +258,40 @@ function App() {
     }
   };
 
+  const handleSaveImage = async () => {
+    try {
+      setIsSnapshotting(true);
+      // Wait for React to render the snapshot view
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Find the main content container
+      const element = document.querySelector('.min-h-screen');
+      if (!element) {
+        setIsSnapshotting(false);
+        return;
+      }
+
+      const canvas = await html2canvas(element, {
+        useCORS: true, // Allow loading cross-origin images (covers)
+        allowTaint: true,
+        backgroundColor: '#f5f5f4', // Match bg-doubanBg
+        scale: 2, // Higher resolution
+      });
+
+      const link = document.createElement('a');
+      link.download = `dbanalyzer-${username}-${new Date().toISOString().split('T')[0]}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (err) {
+      console.error('Failed to save image:', err);
+      alert('保存图片失败，请稍后重试');
+    } finally {
+      setIsSnapshotting(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-doubanBg flex flex-col items-center py-20 px-4 font-sans">
+    <div className="min-h-screen bg-doubanBg flex flex-col items-center py-20 px-4 font-sans relative">
       <div className="relative inline-block mb-8">
         <h1 className="text-4xl md:text-6xl font-bold tracking-wider">
           <span className="text-doubanBlue">艺</span>
@@ -235,36 +305,108 @@ function App() {
         “用一生去发现自己所属的时代。”
       </p>
 
-      <div className="w-full max-w-md flex items-center gap-2 mb-16">
-        <div className="relative flex-1">
-          <input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="请输入豆瓣用户名"
-            className="w-full px-6 py-4 rounded-full border-2 border-stone-300 focus:border-stone-500 focus:outline-none bg-white text-lg shadow-sm transition-colors"
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-          />
+      {!data && (
+        <div className="w-full max-w-md flex items-center gap-2 mb-16">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="请输入豆瓣用户名"
+              className="w-full px-6 py-4 rounded-full border-2 border-stone-300 focus:border-stone-500 focus:outline-none bg-white text-lg shadow-sm transition-colors"
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            />
+          </div>
+          <button
+            onClick={handleSearch}
+            disabled={loading}
+            className="bg-stone-800 text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-stone-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md whitespace-nowrap"
+          >
+            {loading ? '处理中...' : 'GO!'}
+          </button>
         </div>
-        <button
-          onClick={handleSearch}
-          disabled={loading}
-          className="bg-stone-800 text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-stone-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md whitespace-nowrap"
-        >
-          {loading ? '处理中...' : 'GO!'}
-        </button>
-      </div>
+      )}
 
       {loading && <p className="text-stone-500 mb-8 animate-pulse">{status}</p>}
       {error && <p className="text-red-500 mb-8">{error}</p>}
 
       {data && (
         <div className="w-full max-w-5xl bg-white p-8 rounded-3xl shadow-xl flex flex-col gap-12">
+          {/* User Profile Section */}
+          {userProfile && (
+            <div className="rounded-3xl p-8 flex flex-col md:flex-row items-center gap-8" style={{ backgroundColor: 'rgba(47, 164, 79, 0.08)' }}>
+              {/* Avatar & Name */}
+              <div className="flex flex-col items-center gap-3 min-w-[120px]">
+                <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-md">
+                  {userProfile.avatar ? (
+                    <img 
+                      src={`/api/proxy/image?url=${encodeURIComponent(userProfile.avatar)}`} 
+                      alt={userProfile.name}
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-stone-200 flex items-center justify-center text-stone-400">
+                      无头像
+                    </div>
+                  )}
+                </div>
+                <div className="text-xl font-bold text-stone-800">{userProfile.name}</div>
+              </div>
+
+              {/* Stats Text */}
+              <div className="flex-1 text-center md:text-left">
+                <p className="text-lg text-stone-700 leading-loose font-medium">
+                  你好！<span className="font-bold">{userProfile.name}</span>
+                  {userProfile.registrationDate && (
+                    <> 注册于 <span className="font-bold">{userProfile.registrationDate}</span></>
+                  )}
+                  <br />
+                  共计标注 
+                  电影 <span className="font-bold text-doubanBlue">{summary?.movie?.total || 0}</span> 部，
+                  电视剧 <span className="font-bold text-purple-600">{summary?.tv?.total || 0}</span> 部，
+                  图书 <span className="font-bold text-doubanGreen">{summary?.book?.total || 0}</span> 本，
+                  音乐 <span className="font-bold text-doubanPeach">{summary?.music?.total || 0}</span> 首；
+                  <br />
+                  根据你的标注，<span className="font-bold text-stone-900 text-2xl">{favoriteYear}</span>是你最爱的一年。
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Chart Section */}
           <div>
             <h2 className="text-2xl font-bold text-stone-800 mb-2 text-left">喜好分布</h2>
             <p className="text-sm text-stone-500 mb-6">根据所标注的书影音的首次上映/发行时间分类。</p>
-            <CustomLegend hiddenSeries={hiddenSeries} toggleSeries={toggleSeries} />
+            
+            {/* Static Legend for Screenshot - Using SVG for pixel-perfect rendering */}
+            {isSnapshotting ? (
+              <div className="mb-6">
+                <svg width="400" height="24" style={{ display: 'block' }}>
+                  <g transform="translate(0, 12)">
+                    {/* 电影 */}
+                    <circle cx="6" cy="0" r="6" fill="#2AA3F4" />
+                    <text x="20" y="5" fontSize="14" fill="#57534e" fontFamily="sans-serif">电影</text>
+                    
+                    {/* 电视剧 */}
+                    <circle cx="80" cy="0" r="6" fill="#7c3aed" />
+                    <text x="94" y="5" fontSize="14" fill="#57534e" fontFamily="sans-serif">电视剧</text>
+                    
+                    {/* 图书 */}
+                    <circle cx="166" cy="0" r="6" fill="#2FA44F" />
+                    <text x="180" y="5" fontSize="14" fill="#57534e" fontFamily="sans-serif">图书</text>
+                    
+                    {/* 音乐 */}
+                    <circle cx="240" cy="0" r="6" fill="#F6C28B" />
+                    <text x="254" y="5" fontSize="14" fill="#57534e" fontFamily="sans-serif">音乐</text>
+                  </g>
+                </svg>
+              </div>
+            ) : (
+              <div className="interactive-legend">
+                <CustomLegend hiddenSeries={hiddenSeries} toggleSeries={toggleSeries} />
+              </div>
+            )}
             <div className="h-[400px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
@@ -346,8 +488,46 @@ function App() {
                 <SummarySection title="图书" data={summary.book} color="text-doubanGreen" bgColor="#2FA44F" />
                 <SummarySection title="音乐" data={summary.music} color="text-doubanPeach" bgColor="#F6C28B" />
               </div>
+              
+              {!isSnapshotting && (
+                <div className="flex justify-end mt-8">
+                  <button
+                    onClick={handleSaveImage}
+                    className="save-share-btn flex items-center gap-2 px-6 py-3 bg-stone-800 text-white rounded-full hover:bg-stone-700 transition-colors shadow-md"
+                  >
+                    <span>📸</span>
+                    <span>保存 & 分享我的结果</span>
+                  </button>
+                </div>
+              )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Footer */}
+      {!isSnapshotting && (
+        <footer className="mt-16 mb-8 text-stone-400 github-footer">
+          <a 
+            href="https://github.com/sky31even/dbanalyzer" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          >
+            <div className="bg-black text-white p-1 rounded-full">
+              <Github size={16} fill="white" />
+            </div>
+          </a>
+        </footer>
+      )}
+
+      {/* QR Code Section for Screenshot */}
+      {isSnapshotting && (
+        <div className="qr-code-section flex flex-col items-center gap-4 mt-8 pb-8">
+          <div className="p-2 bg-white rounded-lg shadow-sm">
+            <QRCodeCanvas value="https://dbanalyzer.pages.dev/" size={100} />
+          </div>
+          <p className="text-stone-500 text-sm font-medium">扫码查看我的艺术年轮</p>
         </div>
       )}
     </div>
