@@ -154,7 +154,7 @@ const SummarySection = ({ title, data, color, bgColor }) => {
         <div className="text-sm text-stone-500 mb-3">最近标注</div>
         <div className="flex gap-4">
           {data.recent.slice(0, 5).map((item, i) => (
-            <div key={i} className="flex-shrink-0 w-20 flex flex-col gap-1 group" title={item.title}>
+            <div key={i} className={`flex-shrink-0 w-20 flex flex-col gap-1 group ${i >= 3 ? 'hidden md:flex' : 'flex'}`} title={item.title}>
               <a href={item.url} target="_blank" rel="noopener noreferrer" className="block">
                 <div className="w-20 h-28 bg-stone-100 rounded overflow-hidden shadow-sm group-hover:shadow-md transition-shadow relative">
                   {item.cover ? (
@@ -277,6 +277,8 @@ function App() {
         allowTaint: true,
         backgroundColor: '#f5f5f4', // Match bg-doubanBg
         scale: 2, // Higher resolution
+        windowWidth: element.scrollWidth, // Ensure correct width capture
+        windowHeight: element.scrollHeight,
       });
 
       const dataUrl = canvas.toDataURL('image/png');
@@ -506,7 +508,7 @@ function App() {
               </div>
               
               {!isSnapshotting && (
-                <div className="flex justify-end mt-8">
+                <div className="flex justify-center mt-8">
                   <button
                     onClick={handleSaveImage}
                     className="save-share-btn flex items-center gap-2 px-6 py-3 bg-stone-800 text-white rounded-full hover:bg-stone-700 transition-colors shadow-md"
