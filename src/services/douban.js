@@ -263,13 +263,14 @@ export const fetchDoubanData = async (username, onProgress) => {
   const yearMap = new Map();
 
   const processItem = (item, type) => {
-    if (!item.year) return;
+    if (!item.year || item.rating < 4) return;
     const y = item.year.toString();
     if (!yearMap.has(y)) {
       yearMap.set(y, { year: y, movie: 0, tv: 0, book: 0, music: 0 });
     }
     const entry = yearMap.get(y);
-    entry[type]++;
+    // Add weighted score instead of just incrementing
+    entry[type] += item.rating;
   };
 
   movies.forEach(i => processItem(i, 'movie'));

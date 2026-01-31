@@ -216,6 +216,33 @@ function App() {
     return maxYear;
   }, [data]);
 
+  const chartData = useMemo(() => {
+    if (!data || data.length === 0) return [];
+    // Find the first year that has any data
+    const firstYearIndex = data.findIndex(d => (d.movie + d.tv + d.book + d.music) > 0);
+    if (firstYearIndex === -1) return [];
+    return data.slice(firstYearIndex);
+  }, [data]);
+
+  const headerOffset = useMemo(() => {
+    if (!chartData || chartData.length === 0) return 0;
+    
+    // Check the first ~25% of the chart for tall bars
+    const rangeToCheck = Math.ceil(chartData.length * 0.25);
+    const earlyData = chartData.slice(0, rangeToCheck);
+    
+    // Find max value in this range
+    const maxValInRange = Math.max(...earlyData.map(d => d.movie + d.tv + d.book + d.music));
+    const totalMaxVal = Math.max(...chartData.map(d => d.movie + d.tv + d.book + d.music));
+    
+    // If the max value in the early range is more than 40% of the total height,
+    // we should move the header up
+    if (totalMaxVal > 0 && (maxValInRange / totalMaxVal) > 0.4) {
+      return -100; // Move up by 100px
+    }
+    return 0;
+  }, [chartData]);
+
   const toggleSeries = (dataKey) => {
     setHiddenSeries(prev => 
       prev.includes(dataKey) 
@@ -349,50 +376,46 @@ function App() {
           )}
 
           {/* Chart Section */}
-          <div>
-            <h2 className="text-2xl font-bold text-stone-800 mb-2 text-left">喜好分布</h2>
-            <p className="text-sm text-stone-500 mb-6">根据所标注的书影音的首次上映/发行时间分类。</p>
-            
-            {/* Static Legend for Screenshot - Using SVG for pixel-perfect rendering */}
-            {isSnapshotting ? (
-              <div className="mb-6">
-                <svg width="400" height="24" style={{ display: 'block' }}>
-                  <g transform="translate(0, 12)">
-                    {/* 电影 */}
-                    <circle cx="6" cy="0" r="6" fill="#2AA3F4" />
-                    <text x="20" y="5" fontSize="14" fill="#57534e" fontFamily="sans-serif">电影</text>
-                    
-                    {/* 电视剧 */}
-                    <circle cx="80" cy="0" r="6" fill="#7c3aed" />
-                    <text x="94" y="5" fontSize="14" fill="#57534e" fontFamily="sans-serif">电视剧</text>
-                    
-                    {/* 图书 */}
-                    <circle cx="166" cy="0" r="6" fill="#2FA44F" />
-                    <text x="180" y="5" fontSize="14" fill="#57534e" fontFamily="sans-serif">图书</text>
-                    
-                    {/* 音乐 */}
-                    <circle cx="240" cy="0" r="6" fill="#F6C28B" />
-                    <text x="254" y="5" fontSize="14" fill="#57534e" fontFamily="sans-serif">音乐</text>
-                  </g>
-                </svg>
+          <div className="relative pt-4">
+            {/* Internal Chart Header: Title, Description, and Legend */}
+            <div 
+              className="absolute left-8 top-8 z-10 pointer-events-none transition-transform duration-500"
+              style={{ transform: `translateY(${headerOffset}px)` }}
+            >
+              <h2 className="text-2xl font-bold text-stone-800 mb-1">喜好分布</h2>
+              <p className="text-sm text-stone-500 mb-4 max-w-md">仅收录评价为四星及以上的作品，根据书影音的首次上映/发行时间分类。</p>
+              
+              <div className="pointer-events-auto">
+                {isSnapshotting ? (
+                  <div className="mb-2">
+                    <svg width="400" height="24" style={{ display: 'block' }}>
+                      <g transform="translate(0, 12)">
+                        <circle cx="6" cy="0" r="6" fill="#2AA3F4" />
+                        <text x="20" y="5" fontSize="14" fill="#57534e" fontFamily="sans-serif">电影</text>
+                        <circle cx="80" cy="0" r="6" fill="#7c3aed" />
+                        <text x="94" y="5" fontSize="14" fill="#57534e" fontFamily="sans-serif">电视剧</text>
+                        <circle cx="166" cy="0" r="6" fill="#2FA44F" />
+                        <text x="180" y="5" fontSize="14" fill="#57534e" fontFamily="sans-serif">图书</text>
+                        <circle cx="240" cy="0" r="6" fill="#F6C28B" />
+                        <text x="254" y="5" fontSize="14" fill="#57534e" fontFamily="sans-serif">音乐</text>
+                      </g>
+                    </svg>
+                  </div>
+                ) : (
+                  <div className="interactive-legend">
+                    <CustomLegend hiddenSeries={hiddenSeries} toggleSeries={toggleSeries} />
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="interactive-legend">
-                <CustomLegend hiddenSeries={hiddenSeries} toggleSeries={toggleSeries} />
-              </div>
-            )}
+            </div>
+
             {isSnapshotting ? (
               <div className="w-full" style={{ width: '100%' }}>
                 <BarChart
-                  width={window.innerWidth > 1024 ? 960 : window.innerWidth - 64} // Use explicit width during snapshot
-                  height={400}
-                  data={data}
-                  margin={{
-                    top: 20,
-                    right: 0,
-                    left: 0,
-                    bottom: 5,
-                  }}
+                  width={window.innerWidth > 1024 ? 960 : window.innerWidth - 64}
+                  height={450}
+                  data={chartData}
+                  margin={{ top: 120, right: 20, left: 20, bottom: 20 }}
                 >
                   <defs>
                     <linearGradient id="cursor-gradient" x1="0" y1="0" x2="0" y2="1">
@@ -403,7 +426,7 @@ function App() {
                   </defs>
                   <XAxis 
                     dataKey="year" 
-                    interval={data ? Math.ceil(data.length / 10) : 0} 
+                    interval={chartData ? Math.ceil(chartData.length / 10) : 0} 
                     axisLine={false}
                     tickLine={false}
                     tick={{ fill: '#666', fontSize: 12 }}
@@ -448,16 +471,11 @@ function App() {
                 </BarChart>
               </div>
             ) : (
-              <div className="h-[400px] w-full">
+              <div className="h-[450px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
-                    data={data}
-                    margin={{
-                      top: 20,
-                      right: 0,
-                      left: 0,
-                      bottom: 5,
-                    }}
+                    data={chartData}
+                    margin={{ top: 120, right: 20, left: 20, bottom: 20 }}
                   >
                     <defs>
                       <linearGradient id="cursor-gradient" x1="0" y1="0" x2="0" y2="1">
@@ -468,7 +486,7 @@ function App() {
                     </defs>
                     <XAxis 
                       dataKey="year" 
-                      interval={data ? Math.ceil(data.length / 10) : 0} 
+                      interval={chartData ? Math.ceil(chartData.length / 10) : 0} 
                       axisLine={false}
                       tickLine={false}
                       tick={{ fill: '#666', fontSize: 12 }}
