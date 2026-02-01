@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Rectangle } from 'recharts';
-import { Github } from 'lucide-react';
+import { Github, Share2 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { QRCodeCanvas } from 'qrcode.react';
 import { fetchDoubanData } from './services/douban';
@@ -333,6 +333,57 @@ function App() {
     }
   };
 
+  const [generatedImage, setGeneratedImage] = useState(null);
+
+  const handleShare = async () => {
+    try {
+      setIsSnapshotting(true);
+      // Wait for React to render the snapshot view (QR code replacement)
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      const element = document.querySelector('.min-h-screen');
+      if (!element) return;
+
+      const canvas = await html2canvas(element, {
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#f5f5f4',
+        scale: 2,
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight,
+      });
+
+      const dataUrl = canvas.toDataURL('image/png');
+
+      // Native Share API
+      if (navigator.share && navigator.canShare) {
+        const blob = await (await fetch(dataUrl)).blob();
+        const file = new File([blob], `dbanalyzer-${username}.png`, { type: 'image/png' });
+        
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: '我的艺术年轮',
+            text: '快来看看我的豆瓣书影音数据分析！',
+          });
+        } else {
+          setGeneratedImage(dataUrl);
+        }
+      } else {
+        setGeneratedImage(dataUrl);
+      }
+    } catch (err) {
+      console.error('Share failed:', err);
+      // Fallback: download if sharing fails
+      const link = document.createElement('a');
+      link.download = `dbanalyzer-${username}.png`;
+      link.href = generatedImage || '';
+      if (link.href) link.click();
+    } finally {
+      setIsSnapshotting(false);
+    }
+  };
+
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
   return (
@@ -386,8 +437,8 @@ function App() {
         <div className="w-full max-w-5xl bg-white p-8 rounded-3xl shadow-xl flex flex-col gap-12">
           {/* User Profile Section */}
           {userProfile && (
-            <div className="rounded-3xl flex flex-col overflow-hidden" style={{ backgroundColor: 'rgba(47, 164, 79, 0.08)' }}>
-              <div className="p-8 pb-4 flex flex-col md:flex-row items-center gap-8">
+            <div className="rounded-3xl flex flex-col overflow-hidden relative" style={{ backgroundColor: 'rgba(47, 164, 79, 0.08)' }}>
+              <div className="p-8 pb-4 flex flex-col md:flex-row items-start gap-8">
                 {/* Avatar & Name */}
                 <div className="flex flex-col items-center gap-3 min-w-[120px]">
                   <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-md">
@@ -408,22 +459,42 @@ function App() {
                 </div>
 
                 {/* Stats Text */}
-                <div className="flex-1 text-left">
-                  <div className="text-base text-stone-700 leading-tight font-medium flex flex-col gap-2">
-                    <div>
-                      你好！<span className="font-bold">{userProfile.name}</span>
+                <div className="flex-1 text-left pt-0 md:pt-1">
+                  <div className="flex flex-col gap-4">
+                    <div className="text-3xl font-bold text-stone-800">
+                      你好！<span className="text-doubanGreen">{userProfile.name}</span>
                     </div>
-                    <div>
-                      共计标注：
-                      电影 <span className="font-bold text-doubanBlue">{summary?.movie?.total || 0}</span> 部，
-                      电视剧 <span className="font-bold text-purple-600">{summary?.tv?.total || 0}</span> 部，
-                      图书 <span className="font-bold text-doubanGreen">{summary?.book?.total || 0}</span> 本，
-                      音乐 <span className="font-bold text-doubanPeach">{summary?.music?.total || 0}</span> 首；
-                    </div>
-                    <div>
-                      根据你的标注，<span className="font-bold text-stone-900 text-xl">{favoriteYears.join('，')}</span>是你最喜欢的年份。
+                    <div className="text-base text-stone-700 leading-tight font-medium flex flex-col gap-2">
+                      <div>
+                        共计标注：
+                        电影 <span className="font-bold text-doubanBlue">{summary?.movie?.total || 0}</span> 部，
+                        电视剧 <span className="font-bold text-purple-600">{summary?.tv?.total || 0}</span> 部，
+                        图书 <span className="font-bold text-doubanGreen">{summary?.book?.total || 0}</span> 本，
+                        音乐 <span className="font-bold text-doubanPeach">{summary?.music?.total || 0}</span> 首；
+                      </div>
+                      <div>
+                        根据你的标注，<span className="font-bold text-stone-900 text-xl">{favoriteYears.join('，')}</span>是你最喜欢的年份。
+                      </div>
                     </div>
                   </div>
+                </div>
+
+                {/* Share Button / QR Code */}
+                <div className="absolute right-8 top-8">
+                  {isSnapshotting ? (
+                    <div className="flex flex-col items-center gap-1 bg-white p-2 rounded-lg shadow-sm border border-stone-100">
+                      <QRCodeCanvas value="https://dbanalyzer.pages.dev/" size={64} />
+                      <span className="text-[8px] text-stone-400">扫码查看我的艺术年轮</span>
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={handleShare}
+                      className="p-3 bg-white text-stone-600 rounded-full shadow-md hover:bg-stone-50 transition-colors border border-stone-100 group"
+                      title="分享我的结果"
+                    >
+                      <Share2 size={20} className="group-hover:text-doubanGreen transition-colors" />
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -641,18 +712,20 @@ function App() {
       )}
 
       {/* Footer */}
-      <footer className="w-full text-center mt-12 mb-8 text-stone-400 text-sm flex flex-col items-center gap-2">
-        <a 
-          href="https://github.com/sky31even/dbanalyzer" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-        >
-          <div className="bg-black text-white p-1 rounded-full">
-            <Github size={16} fill="white" />
-          </div>
-        </a>
-      </footer>
+          <footer className="w-full text-center mt-12 mb-8 text-stone-400 text-sm flex flex-col items-center gap-2">
+            {!isSnapshotting && (
+              <a 
+                href="https://github.com/sky31even/dbanalyzer" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+              >
+                <div className="bg-black text-white p-1 rounded-full">
+                  <Github size={16} fill="white" />
+                </div>
+              </a>
+            )}
+          </footer>
     </div>
   );
 }
