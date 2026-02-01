@@ -221,8 +221,23 @@ const SummarySection = ({ title, data, color, bgColor, isSnapshotting }) => {
                   )}
                   <RatingBadge rating={item.rating} isSnapshotting={isSnapshotting} />
                 </div>
-                <div className="text-[11px] text-stone-600 w-full text-center leading-tight mt-1 px-1 group-hover:text-doubanBlue transition-colors overflow-hidden font-medium">
-                  {item.title.length > 12 ? item.title.slice(0, 11) + '...' : item.title}
+                <div 
+                  className="text-[11px] text-stone-600 w-full text-center leading-tight mt-1 px-1 group-hover:text-doubanBlue transition-colors overflow-hidden font-medium"
+                  style={isSnapshotting ? {
+                    height: '2.8em', // Even more room
+                    lineHeight: '1.4em',
+                    display: 'block',
+                    paddingBottom: '2px'
+                  } : {
+                    display: '-webkit-box',
+                    WebkitLineClamp: '2',
+                    WebkitBoxOrient: 'vertical',
+                    minHeight: '2.8em'
+                  }}
+                >
+                  {isSnapshotting && item.title.length > 22 
+                    ? item.title.slice(0, 21) + '...' 
+                    : item.title}
                 </div>
               </a>
             </div>
