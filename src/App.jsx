@@ -180,7 +180,7 @@ const SummarySection = ({ title, data, color, bgColor, isSnapshotting }) => {
               title={item.title}
             >
               <a href={item.url} target="_blank" rel="noopener noreferrer" className="block">
-                <div className="w-20 h-28 bg-stone-100 rounded overflow-hidden shadow-sm group-hover:shadow-md transition-shadow relative">
+                <div className="w-20 h-28 bg-stone-100 rounded overflow-hidden shadow-sm group-hover:shadow-md transition-shadow relative translate-z-0">
                   {item.cover ? (
                     <img 
                       src={`/api/proxy/image?url=${encodeURIComponent(item.cover)}&t=${Date.now()}`}
@@ -197,10 +197,7 @@ const SummarySection = ({ title, data, color, bgColor, isSnapshotting }) => {
                     <div className="w-full h-full flex items-center justify-center text-stone-300 text-xs">No Cover</div>
                   )}
                   {item.rating > 0 && (
-                    <div 
-                      className="absolute bg-yellow-400 text-white text-[10px] px-1 rounded shadow"
-                      style={{ top: '4px', right: '4px' }}
-                    >
+                    <div className="absolute top-1 right-1 z-10 bg-yellow-400 text-white text-[10px] px-1 py-0.5 rounded shadow leading-none flex items-center">
                       {item.rating}★
                     </div>
                   )}
@@ -353,8 +350,6 @@ function App() {
         allowTaint: true,
         backgroundColor: '#f5f5f4',
         scale: 2,
-        windowWidth: element.scrollWidth,
-        windowHeight: element.scrollHeight,
       });
 
       const dataUrl = canvas.toDataURL('image/png');
