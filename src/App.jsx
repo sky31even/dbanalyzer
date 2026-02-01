@@ -180,16 +180,14 @@ const SummarySection = ({ title, data, color, bgColor, isSnapshotting }) => {
               title={item.title}
             >
               <a href={item.url} target="_blank" rel="noopener noreferrer" className="block">
-                <div 
-                  className="w-20 h-28 relative group shadow-sm hover:shadow-md transition-shadow flex justify-end items-start p-1"
-                >
-                  {/* Background Cover with rounded corners */}
-                  <div className="absolute inset-0 bg-stone-100 rounded overflow-hidden">
+                <div className="w-20 h-28 relative shadow-sm group-hover:shadow-md transition-shadow">
+                  {/* Image Container */}
+                  <div className="w-full h-full rounded overflow-hidden bg-stone-100">
                     {item.cover ? (
                       <img 
                         src={`/api/proxy/image?url=${encodeURIComponent(item.cover)}&t=${Date.now()}`}
                         alt={item.title} 
-                        className="w-full h-full object-cover block"
+                        className="w-full h-full object-cover"
                         referrerPolicy="no-referrer"
                         onError={(e) => {
                           e.target.onerror = null;
@@ -201,12 +199,12 @@ const SummarySection = ({ title, data, color, bgColor, isSnapshotting }) => {
                       <div className="w-full h-full flex items-center justify-center text-stone-300 text-xs">No Cover</div>
                     )}
                   </div>
-                  {/* Rating Badge - Using relative in a flex parent for better screenshot stability */}
+                  {/* Rating Badge - Absolute Zero with Padding to avoid displacement in screenshots */}
                   {item.rating > 0 && (
-                    <div 
-                      className="relative z-10 bg-yellow-400 text-white text-[10px] px-1 rounded shadow-sm font-bold"
-                    >
-                      {item.rating}★
+                    <div className="absolute top-0 right-0 p-1 pointer-events-none">
+                      <div className="bg-yellow-400 text-white text-[10px] px-1 rounded shadow-sm font-bold pointer-events-auto">
+                        {item.rating}★
+                      </div>
                     </div>
                   )}
                 </div>
