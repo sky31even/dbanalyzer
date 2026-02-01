@@ -166,11 +166,19 @@ const SummarySection = ({ title, data, color, bgColor, isSnapshotting }) => {
       </div>
 
       {/* Right: Recent Covers */}
-      <div className="flex-1 overflow-visible pb-2">
+      <div className="flex-1 overflow-hidden pb-2">
         <div className="text-sm text-stone-500 mb-3">最近标注</div>
-        <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
+        <div className="flex gap-4 flex-nowrap overflow-hidden">
           {data.recent.slice(0, 5).map((item, i) => (
-            <div key={i} className={`flex-shrink-0 w-20 flex flex-col gap-1 group`} title={item.title}>
+            <div 
+              key={i} 
+              className={`flex-shrink-0 w-20 flex flex-col gap-1 group ${
+                i === 3 ? 'hidden sm:flex' : 
+                i === 4 ? 'hidden md:flex' : 
+                'flex'
+              }`} 
+              title={item.title}
+            >
               <a href={item.url} target="_blank" rel="noopener noreferrer" className="block">
                 <div className="w-20 h-28 bg-stone-100 rounded overflow-hidden shadow-sm group-hover:shadow-md transition-shadow relative">
                   {item.cover ? (
@@ -384,7 +392,7 @@ function App() {
 
                 {/* Stats Text */}
                 <div className="flex-1 text-left">
-                  <div className="text-base text-stone-700 leading-tight font-medium flex flex-col gap-1">
+                  <div className="text-base text-stone-700 leading-tight font-medium flex flex-col gap-2">
                     <div>
                       你好！<span className="font-bold">{userProfile.name}</span>
                     </div>
@@ -394,6 +402,8 @@ function App() {
                       电视剧 <span className="font-bold text-purple-600">{summary?.tv?.total || 0}</span> 部，
                       图书 <span className="font-bold text-doubanGreen">{summary?.book?.total || 0}</span> 本，
                       音乐 <span className="font-bold text-doubanPeach">{summary?.music?.total || 0}</span> 首；
+                    </div>
+                    <div>
                       根据你的标注，<span className="font-bold text-stone-900 text-xl">{favoriteYears.join('，')}</span>是你最喜欢的年份。
                     </div>
                   </div>
@@ -443,7 +453,7 @@ function App() {
               style={{ transform: `translateY(${headerOffset}px)` }}
             >
               <h2 className="text-2xl font-bold text-stone-800 mb-1">喜好分布</h2>
-              <p className="text-sm text-stone-500 mb-4 whitespace-nowrap overflow-visible">仅收录评价为四星及以上的作品，根据书影音的首次上映/发行时间分类。</p>
+              <p className="text-sm text-stone-500 mb-4 whitespace-normal md:whitespace-nowrap">仅收录评价为四星及以上的作品，根据书影音的首次上映/发行时间分类。</p>
               
               <div className="pointer-events-auto">
                 {isSnapshotting ? (
