@@ -181,28 +181,30 @@ const SummarySection = ({ title, data, color, bgColor, isSnapshotting }) => {
             >
               <a href={item.url} target="_blank" rel="noopener noreferrer" className="block">
                 <div 
-                  className="w-20 h-28 bg-stone-100 rounded overflow-hidden shadow-sm group-hover:shadow-md transition-shadow relative"
-                  style={{ transform: 'translateZ(0)' }}
+                  className="w-20 h-28 relative group shadow-sm hover:shadow-md transition-shadow flex justify-end items-start p-1"
                 >
-                  {item.cover ? (
-                    <img 
-                      src={`/api/proxy/image?url=${encodeURIComponent(item.cover)}&t=${Date.now()}`}
-                      alt={item.title} 
-                      className="w-full h-full object-cover"
-                      referrerPolicy="no-referrer"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.style.display = 'none';
-                        e.target.parentNode.innerHTML = '<div class="w-full h-full flex items-center justify-center text-stone-300 text-xs">Load Failed</div>';
-                      }}
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-stone-300 text-xs">No Cover</div>
-                  )}
+                  {/* Background Cover with rounded corners */}
+                  <div className="absolute inset-0 bg-stone-100 rounded overflow-hidden">
+                    {item.cover ? (
+                      <img 
+                        src={`/api/proxy/image?url=${encodeURIComponent(item.cover)}&t=${Date.now()}`}
+                        alt={item.title} 
+                        className="w-full h-full object-cover block"
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.style.display = 'none';
+                          e.target.parentNode.innerHTML = '<div class="w-full h-full flex items-center justify-center text-stone-300 text-xs">Load Failed</div>';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-stone-300 text-xs">No Cover</div>
+                    )}
+                  </div>
+                  {/* Rating Badge - Using relative in a flex parent for better screenshot stability */}
                   {item.rating > 0 && (
                     <div 
-                      className="absolute bg-yellow-400 text-white text-[10px] px-1 rounded shadow"
-                      style={{ top: '4px', right: '4px', zIndex: 10 }}
+                      className="relative z-10 bg-yellow-400 text-white text-[10px] px-1 rounded shadow-sm font-bold"
                     >
                       {item.rating}★
                     </div>
