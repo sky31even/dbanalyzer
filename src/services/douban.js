@@ -280,22 +280,22 @@ export const fetchDoubanData = async (username, onProgress) => {
 
   const yearData = Array.from(yearMap.values()).sort((a, b) => parseInt(a.year) - parseInt(b.year));
   
-  const allItems = [
-    ...movies,
-    ...tvs,
-    ...books.items,
-    ...music.items
-  ].filter(i => i.rating >= 4);
-
+  const allHighRatedItems = [
+    ...movies.filter(i => i.rating >= 4),
+    ...tvs.filter(i => i.rating >= 4),
+    ...books.items.filter(i => i.rating >= 4),
+    ...music.items.filter(i => i.rating >= 4)
+  ];
+  
   return {
     yearData,
+    allHighRatedItems,
     summary: {
       movie: { ...movieStats, label: '电影' },
       tv: { ...tvStats, label: '电视剧' },
       book: { ...bookStats, label: '图书' },
       music: { ...musicStats, label: '音乐' }
     },
-    userProfile,
-    allItems
+    userProfile
   };
 };
