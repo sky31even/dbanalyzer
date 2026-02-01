@@ -383,7 +383,7 @@ function App() {
               style={{ transform: `translateY(${headerOffset}px)` }}
             >
               <h2 className="text-2xl font-bold text-stone-800 mb-1">喜好分布</h2>
-              <p className="text-sm text-stone-500 mb-4 max-w-md">仅收录评价为四星及以上的作品，根据书影音的首次上映/发行时间分类。</p>
+              <p className="text-sm text-stone-500 mb-4 max-w-none">仅收录评价为四星及以上的作品，根据书影音的首次上映/发行时间分类。</p>
               
               <div className="pointer-events-auto">
                 {isSnapshotting ? (
@@ -494,6 +494,7 @@ function App() {
                     />
                     <Tooltip 
                       cursor={<CustomCursor />}
+                      formatter={(value) => `${value}*`}
                       contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                     />
                     <Bar 
