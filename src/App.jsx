@@ -433,8 +433,8 @@ function App() {
             <div className="rounded-3xl flex flex-col overflow-hidden" style={{ backgroundColor: 'rgba(47, 164, 79, 0.08)' }}>
               <div className="p-8 pb-4 flex flex-col md:flex-row items-start gap-8 relative">
                 {/* Avatar & Name */}
-                <div className="flex flex-col items-center gap-3 min-w-[120px]">
-                  <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-md">
+                <div className="flex flex-col items-center gap-3 min-w-[60px] md:min-w-[120px]">
+                  <div className="w-12 h-12 md:w-24 md:h-24 rounded-full overflow-hidden border-4 border-white shadow-md">
                     {userProfile.avatar ? (
                       <img 
                         src={`/api/proxy/image?url=${encodeURIComponent(userProfile.avatar)}`} 
@@ -448,13 +448,12 @@ function App() {
                       </div>
                     )}
                   </div>
-                  <div className="text-xl font-bold text-stone-800">{userProfile.name}</div>
                 </div>
 
                 {/* Stats Text */}
                 <div className="flex-1 text-left pt-0">
-                  <div className="text-base text-stone-700 leading-tight font-medium flex flex-col gap-3">
-                    <div className="text-3xl font-bold text-stone-900 mb-1">
+                  <div className="text-base text-stone-700 leading-tight font-medium flex flex-col gap-3 pr-12 md:pr-0">
+                    <div className="text-2xl md:text-3xl font-bold text-stone-900 mb-1">
                       你好！{userProfile.name}
                     </div>
                     <div className="leading-relaxed">
@@ -471,18 +470,18 @@ function App() {
                 </div>
 
                 {/* Share Button / QR Code */}
-                <div className="md:absolute md:right-8 md:top-8 flex flex-col items-center gap-2">
+                <div className="absolute right-4 top-4 md:right-8 md:top-8 flex flex-col items-center gap-2">
                   {isSnapshotting ? (
                     <div className="flex flex-col items-center gap-1 bg-white p-2 rounded-xl shadow-sm">
-                      <QRCodeCanvas value="https://dbanalyzer.pages.dev/" size={80} />
-                      <span className="text-[10px] text-stone-400">扫码生成你的艺术年轮</span>
+                      <QRCodeCanvas value="https://dbanalyzer.pages.dev/" size={isMobile ? 60 : 80} />
+                      <span className="text-[8px] md:text-[10px] text-stone-400">扫码生成你的艺术年轮</span>
                     </div>
                   ) : (
                     <button 
                       onClick={handleShare}
-                      className="px-6 py-2.5 bg-doubanGreen text-white rounded-full font-bold shadow-md hover:bg-opacity-90 transition-all flex items-center gap-2 group"
+                      className="px-4 py-2 md:px-6 md:py-2.5 bg-doubanGreen text-white rounded-full font-bold shadow-md hover:bg-opacity-90 transition-all flex items-center gap-2 group text-sm md:text-base"
                     >
-                      <span className="text-lg">✨</span>
+                      <span className="text-base md:text-lg">✨</span>
                       分享结果
                     </button>
                   )}
@@ -527,11 +526,11 @@ function App() {
           <div className="relative pt-4">
             {/* Internal Chart Header: Title, Description, and Legend */}
             <div 
-              className="absolute left-0 top-8 z-10 pointer-events-none transition-transform duration-500"
+              className="absolute left-0 top-8 z-10 pointer-events-none transition-transform duration-500 w-full px-8"
               style={{ transform: `translateY(${headerOffset}px)` }}
             >
               <h2 className="text-2xl font-bold text-stone-800 mb-1">喜好分布</h2>
-              <p className="text-sm text-stone-500 mb-4 whitespace-normal md:whitespace-nowrap">仅收录评价为四星及以上的作品，根据书影音的首次上映/发行时间分类。</p>
+              <p className="text-sm text-stone-500 mb-4 whitespace-normal md:whitespace-nowrap max-w-full">仅收录评价为四星及以上的作品，根据书影音的首次上映/发行时间分类。</p>
               
               <div className="pointer-events-auto">
                 {isSnapshotting ? (
