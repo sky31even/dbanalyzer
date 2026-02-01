@@ -471,32 +471,22 @@ function App() {
 
                 {/* Stats Text */}
                 <div className="flex-1 text-left pt-0 w-full">
-                  <div className="text-base text-stone-700 leading-tight font-medium flex flex-col gap-3 w-full">
+                  <div className="text-base text-stone-700 leading-tight font-medium flex flex-col gap-3">
                     <div className="text-2xl md:text-3xl font-bold text-stone-900 mb-1">
                       你好！{userProfile.name}
                     </div>
-                    <div className="leading-relaxed text-justify w-full">
+                    <div className="leading-relaxed text-justify">
                       共计标注
                       电影 <span className="font-bold text-doubanBlue">{summary?.movie?.total || 0}</span> 部，
                       电视剧 <span className="font-bold text-purple-600">{summary?.tv?.total || 0}</span> 部，
                       图书 <span className="font-bold text-doubanGreen">{summary?.book?.total || 0}</span> 本，
                       音乐 <span className="font-bold text-doubanPeach">{summary?.music?.total || 0}</span> 首；
                     </div>
-                    <div className="text-justify w-full">
+                    <div className="text-justify">
                       根据你的标注，<span className="font-bold text-stone-900 text-xl">{favoriteYears.join('，')}</span>是你最喜欢的年份。
                     </div>
                   </div>
                 </div>
-
-                {/* QR Code in Screenshot Mode */}
-                {isSnapshotting && (
-                  <div className="absolute right-4 top-4 md:right-8 md:top-8 flex flex-col items-center gap-2">
-                    <div className="flex flex-col items-center gap-1 bg-white p-2 rounded-xl shadow-sm">
-                      <QRCodeCanvas value="https://dbanalyzer.pages.dev/" size={isMobile ? 60 : 80} />
-                      <span className="text-[8px] md:text-[10px] text-stone-400">扫码生成你的艺术年轮</span>
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Cover Wall with Gradient Blur */}
@@ -712,15 +702,24 @@ function App() {
       )}
 
       {/* Footer */}
-      <footer className="w-full text-center mt-12 mb-8 text-stone-400 text-sm flex flex-col items-center gap-6">
-        {!isSnapshotting && (
-          <button 
-            onClick={handleShare}
-            className="px-8 py-3 bg-doubanGreen text-white rounded-full font-bold shadow-lg hover:bg-opacity-90 transition-all flex items-center gap-2 group text-base"
-          >
-            <span className="text-xl">✨</span>
-            分享结果
-          </button>
+      <footer className="w-full text-center mt-12 mb-8 text-stone-400 text-sm flex flex-col items-center gap-4">
+        {data && (
+          <div className="flex flex-col items-center gap-2">
+            {isSnapshotting ? (
+              <div className="flex flex-col items-center gap-1 bg-white p-2 rounded-xl shadow-sm mb-2">
+                <QRCodeCanvas value="https://dbanalyzer.pages.dev/" size={isMobile ? 60 : 80} />
+                <span className="text-[8px] md:text-[10px] text-stone-400 font-medium">扫码生成你的艺术年轮</span>
+              </div>
+            ) : (
+              <button 
+                onClick={handleShare}
+                className="px-6 py-2 bg-doubanGreen/10 text-doubanGreen rounded-full font-bold hover:bg-doubanGreen/20 transition-all flex items-center gap-2 group text-sm md:text-base border border-doubanGreen/20"
+              >
+                <span>✨</span>
+                分享结果
+              </button>
+            )}
+          </div>
         )}
         
         <a 
