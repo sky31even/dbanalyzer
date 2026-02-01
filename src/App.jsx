@@ -58,8 +58,8 @@ const CustomTooltip = ({ active, payload, label }) => {
       <div className="bg-white p-4 rounded-xl shadow-lg border border-stone-100">
         <p className="font-bold text-stone-800 mb-2">{label}</p>
         {payload.map((entry, index) => (
-          <p key={index} className="text-sm" style={{ color: entry.color }}>
-            {entry.name} : {entry.value} 🌟
+          <p key={index} className="text-sm flex items-center gap-1" style={{ color: entry.color }}>
+            {entry.name} : {entry.value} <span style={{ color: '#ff9800' }}>★</span>
           </p>
         ))}
       </div>
@@ -131,12 +131,6 @@ const SummarySection = ({ title, data, color, bgColor, isSnapshotting }) => {
     return '看过';
   };
 
-  const StarIcon = ({ fill = "currentColor" }) => (
-    <svg viewBox="0 0 24 24" width="12" height="12" fill={fill} className="inline-block align-middle mb-0.5">
-      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-    </svg>
-  );
-
   return (
     <div className="flex flex-col md:flex-row gap-6 py-8 border-t border-stone-100 last:border-0">
       {/* Left: Category Name */}
@@ -163,9 +157,7 @@ const SummarySection = ({ title, data, color, bgColor, isSnapshotting }) => {
                     className="w-full rounded-t-sm transition-all duration-500 opacity-80 hover:opacity-100"
                     style={{ height: `${Math.max(height, 2)}%`, backgroundColor: bgColor }}
                   ></div>
-                  <div className="text-xs text-stone-400 whitespace-nowrap">
-                    {star}<StarIcon fill="#fbbf24" />
-                  </div>
+                  <div className="text-xs text-stone-400">{star}★</div>
                 </div>
               );
             })}
@@ -181,9 +173,8 @@ const SummarySection = ({ title, data, color, bgColor, isSnapshotting }) => {
             <div 
               key={i} 
               className={`flex-shrink-0 w-20 flex flex-col gap-1 group ${
-                i === 2 ? 'flex' :
-                i === 3 ? 'hidden min-[400px]:flex' : 
-                i === 4 ? 'hidden min-[500px]:flex' : 
+                i === 3 ? 'hidden xs:flex' : 
+                i === 4 ? 'hidden sm:flex' : 
                 'flex'
               }`} 
               title={item.title}
@@ -211,7 +202,15 @@ const SummarySection = ({ title, data, color, bgColor, isSnapshotting }) => {
                     </div>
                   )}
                 </div>
-                <div className="text-xs text-stone-600 w-full text-center leading-tight mt-1 px-1 group-hover:text-doubanBlue transition-colors line-clamp-2 h-7 overflow-hidden">
+                <div 
+                  className="text-[10px] text-stone-600 w-full text-center leading-tight mt-1 px-1 group-hover:text-doubanBlue transition-colors overflow-hidden"
+                  style={{
+                    display: '-webkit-box',
+                    WebkitLineClamp: '2',
+                    WebkitBoxOrient: 'vertical',
+                    minHeight: '2.4em'
+                  }}
+                >
                   {item.title}
                 </div>
               </a>
@@ -334,8 +333,17 @@ function App() {
     }
   };
 
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
   return (
     <div className="min-h-screen bg-doubanBg flex flex-col items-center py-20 px-4 font-sans relative">
+      <style>
+        {`
+          @media (min-width: 480px) {
+            .xs\\:flex { display: flex !important; }
+          }
+        `}
+      </style>
       <div className="relative inline-block mb-8">
         <h1 className="text-4xl md:text-6xl font-bold tracking-wider">
           <span className="text-doubanBlue">艺</span>
