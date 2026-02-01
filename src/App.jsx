@@ -180,7 +180,10 @@ const SummarySection = ({ title, data, color, bgColor, isSnapshotting }) => {
               title={item.title}
             >
               <a href={item.url} target="_blank" rel="noopener noreferrer" className="block">
-                <div className="w-20 h-28 bg-stone-100 rounded overflow-hidden shadow-sm group-hover:shadow-md transition-shadow relative" style={{ isolation: 'isolate' }}>
+                <div 
+                  className="w-20 h-28 bg-stone-100 rounded overflow-hidden shadow-sm group-hover:shadow-md transition-shadow relative"
+                  style={{ transform: 'translateZ(0)' }}
+                >
                   {item.cover ? (
                     <img 
                       src={`/api/proxy/image?url=${encodeURIComponent(item.cover)}&t=${Date.now()}`}
@@ -198,8 +201,8 @@ const SummarySection = ({ title, data, color, bgColor, isSnapshotting }) => {
                   )}
                   {item.rating > 0 && (
                     <div 
-                      className="absolute top-0 right-0 bg-yellow-400 text-white text-[10px] px-1.5 py-0.5 rounded-bl shadow-sm z-10"
-                      style={{ transform: 'translateZ(0)' }}
+                      className="absolute bg-yellow-400 text-white text-[10px] px-1 rounded shadow"
+                      style={{ top: '4px', right: '4px', zIndex: 10 }}
                     >
                       {item.rating}★
                     </div>
