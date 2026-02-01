@@ -222,15 +222,14 @@ const SummarySection = ({ title, data, color, bgColor, isSnapshotting }) => {
                   <RatingBadge rating={item.rating} isSnapshotting={isSnapshotting} />
                 </div>
                 <div 
-                  className={`text-[11px] text-stone-600 w-full text-center leading-tight mt-1 px-1 group-hover:text-doubanBlue transition-colors overflow-hidden font-medium ${isSnapshotting ? '' : 'line-clamp-2'}`}
-                  style={!isSnapshotting ? {
+                  className="text-[11px] text-stone-600 w-full text-center mt-1 px-1 group-hover:text-doubanBlue transition-colors overflow-hidden font-medium"
+                  style={{
                     display: '-webkit-box',
                     WebkitLineClamp: '2',
                     WebkitBoxOrient: 'vertical',
-                    minHeight: '2.4em'
-                  } : {
-                    maxHeight: '2.4em',
-                    lineHeight: '1.2em'
+                    height: '2.6em',
+                    lineHeight: '1.3em',
+                    wordBreak: 'break-all'
                   }}
                 >
                   {item.title}
