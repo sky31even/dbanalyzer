@@ -168,15 +168,11 @@ const SummarySection = ({ title, data, color, bgColor, isSnapshotting }) => {
       {/* Right: Recent Covers */}
       <div className="flex-1 overflow-hidden pb-2">
         <div className="text-sm text-stone-500 mb-3">最近标注</div>
-        <div className="flex gap-4 flex-nowrap overflow-hidden">
+        <div className="grid grid-cols-[repeat(auto-fill,80px)] gap-4 h-[140px] overflow-hidden">
           {data.recent.slice(0, 5).map((item, i) => (
             <div 
               key={i} 
-              className={`flex-shrink-0 w-20 flex flex-col gap-1 group ${
-                i === 3 ? 'hidden sm:flex' : 
-                i === 4 ? 'hidden md:flex' : 
-                'flex'
-              }`} 
+              className="flex-shrink-0 w-20 flex flex-col gap-1 group" 
               title={item.title}
             >
               <a href={item.url} target="_blank" rel="noopener noreferrer" className="block">
