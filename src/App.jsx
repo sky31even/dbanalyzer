@@ -198,23 +198,31 @@ function App() {
   const [data, setData] = useState(null);
   const [summary, setSummary] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
+  const [allItems, setAllItems] = useState([]);
   const [isSnapshotting, setIsSnapshotting] = useState(false);
   const [error, setError] = useState('');
   const [hiddenSeries, setHiddenSeries] = useState([]);
 
-  const favoriteYear = useMemo(() => {
-    if (!data || data.length === 0) return null;
+  const favoriteYears = useMemo(() => {
+    if (!data || data.length === 0) return [];
     let maxCount = 0;
-    let maxYear = null;
+    let years = [];
     data.forEach(item => {
       const count = (item.movie || 0) + (item.tv || 0) + (item.book || 0) + (item.music || 0);
       if (count > maxCount) {
         maxCount = count;
-        maxYear = item.year;
+        years = [item.year];
+      } else if (count === maxCount && maxCount > 0) {
+        years.push(item.year);
       }
     });
-    return maxYear;
+    return years.sort((a, b) => a - b);
   }, [data]);
+
+  const favoriteItems = useMemo(() => {
+    if (favoriteYears.length === 0 || allItems.length === 0) return [];
+    return allItems.filter(item => item.year && favoriteYears.includes(item.year.toString()));
+  }, [favoriteYears, allItems]);
 
   const chartData = useMemo(() => {
     if (!data || data.length === 0) return [];
@@ -275,6 +283,7 @@ function App() {
         setData(result.yearData);
         setSummary(result.summary);
         setUserProfile(result.userProfile);
+        setAllItems(result.allItems || []);
       }
     } catch (err) {
       console.error(err);
@@ -329,49 +338,74 @@ function App() {
         <div className="w-full max-w-5xl bg-white p-8 rounded-3xl shadow-xl flex flex-col gap-12">
           {/* User Profile Section */}
           {userProfile && (
-            <div className="rounded-3xl p-8 flex flex-col md:flex-row items-center gap-8" style={{ backgroundColor: 'rgba(47, 164, 79, 0.08)' }}>
-              {/* Avatar & Name */}
-              <div className="flex flex-col items-center gap-3 min-w-[120px]">
-                <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-md">
-                  {userProfile.avatar ? (
-                    <img 
-                      src={`/api/proxy/image?url=${encodeURIComponent(userProfile.avatar)}`} 
-                      alt={userProfile.name}
-                      className="w-full h-full object-cover"
-                      referrerPolicy="no-referrer"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-stone-200 flex items-center justify-center text-stone-400">
-                      无头像
-                    </div>
-                  )}
+            <div className="rounded-3xl p-8 flex flex-col gap-6" style={{ backgroundColor: 'rgba(47, 164, 79, 0.08)' }}>
+              <div className="flex flex-col md:flex-row items-center gap-8">
+                {/* Avatar & Name */}
+                <div className="flex flex-col items-center gap-3 min-w-[120px]">
+                  <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-md">
+                    {userProfile.avatar ? (
+                      <img 
+                        src={`/api/proxy/image?url=${encodeURIComponent(userProfile.avatar)}`} 
+                        alt={userProfile.name}
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-stone-200 flex items-center justify-center text-stone-400">
+                        无头像
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-xl font-bold text-stone-800">{userProfile.name}</div>
                 </div>
-                <div className="text-xl font-bold text-stone-800">{userProfile.name}</div>
+
+                {/* Stats Text */}
+                <div className="flex-1 text-left">
+                  <div className="text-lg text-stone-700 leading-snug font-medium flex flex-col gap-1">
+                    <div>
+                      你好！<span className="font-bold">{userProfile.name}</span>
+                    </div>
+                    <div>
+                      共计标注：
+                      电影 <span className="font-bold text-doubanBlue">{summary?.movie?.total || 0}</span> 部，
+                      电视剧 <span className="font-bold text-purple-600">{summary?.tv?.total || 0}</span> 部，
+                      图书 <span className="font-bold text-doubanGreen">{summary?.book?.total || 0}</span> 本，
+                      音乐 <span className="font-bold text-doubanPeach">{summary?.music?.total || 0}</span> 首；
+                    </div>
+                    <div className="mt-1">
+                      根据你的标注，
+                      <span className="font-bold text-stone-900 text-xl">
+                        {favoriteYears.join('，')}
+                      </span>
+                      是您最喜欢的{favoriteYears.length > 1 ? '年份' : '一年'}。
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              {/* Stats Text */}
-              <div className="flex-1 text-left">
-                <div className="text-lg text-stone-700 leading-loose font-medium flex flex-col gap-2">
-                  <div>
-                    你好！<span className="font-bold">{userProfile.name}</span>
+              {/* Cover Wall for Favorite Years */}
+              {favoriteItems.length > 0 && (
+                <div className="relative mt-2 overflow-hidden rounded-xl" style={{ height: '120px' }}>
+                  <div className="flex flex-wrap gap-2 justify-center opacity-90">
+                    {favoriteItems.slice(0, 24).map((item, idx) => (
+                      <div key={idx} className="w-16 h-24 flex-shrink-0 bg-stone-100 rounded shadow-sm overflow-hidden">
+                        {item.cover ? (
+                          <img 
+                            src={`/api/proxy/image?url=${encodeURIComponent(item.cover)}`} 
+                            alt={item.title} 
+                            className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-stone-200 text-[8px] text-stone-400">No Cover</div>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                  {userProfile.registrationDate && (
-                    <div>注册于 <span className="font-bold">{userProfile.registrationDate}</span></div>
-                  )}
-                  <div>
-                    共计标注：
-                  </div>
-                  <div className="pl-0">
-                    电影 <span className="font-bold text-doubanBlue">{summary?.movie?.total || 0}</span> 部，
-                    电视剧 <span className="font-bold text-purple-600">{summary?.tv?.total || 0}</span> 部，
-                    图书 <span className="font-bold text-doubanGreen">{summary?.book?.total || 0}</span> 本，
-                    音乐 <span className="font-bold text-doubanPeach">{summary?.music?.total || 0}</span> 首；
-                  </div>
-                  <div className="mt-2">
-                    根据你的标注，<span className="font-bold text-stone-900 text-2xl">{favoriteYear}</span>是你最爱的一年。
-                  </div>
+                  {/* Top 20% blur/fade effect */}
+                  <div className="absolute inset-x-0 top-0 h-6 bg-gradient-to-b from-doubanBg/40 to-transparent backdrop-blur-[2px]" />
                 </div>
-              </div>
+              )}
             </div>
           )}
 
@@ -383,7 +417,7 @@ function App() {
               style={{ transform: `translateY(${headerOffset}px)` }}
             >
               <h2 className="text-2xl font-bold text-stone-800 mb-1">喜好分布</h2>
-              <p className="text-sm text-stone-500 mb-4 max-w-none">仅收录评价为四星及以上的作品，根据书影音的首次上映/发行时间分类。</p>
+              <p className="text-sm text-stone-500 mb-4">仅收录评价为四星及以上的作品，根据书影音的首次上映/发行时间分类。</p>
               
               <div className="pointer-events-auto">
                 {isSnapshotting ? (
@@ -494,8 +528,8 @@ function App() {
                     />
                     <Tooltip 
                       cursor={<CustomCursor />}
-                      formatter={(value, name) => [`${value}★`, name]}
                       contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                      formatter={(value, name) => [`${value} ★`, name]}
                     />
                     <Bar 
                       dataKey="movie" 

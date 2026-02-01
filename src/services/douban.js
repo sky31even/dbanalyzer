@@ -280,6 +280,13 @@ export const fetchDoubanData = async (username, onProgress) => {
 
   const yearData = Array.from(yearMap.values()).sort((a, b) => parseInt(a.year) - parseInt(b.year));
   
+  const allItems = [
+    ...movies,
+    ...tvs,
+    ...books.items,
+    ...music.items
+  ].filter(i => i.rating >= 4);
+
   return {
     yearData,
     summary: {
@@ -288,6 +295,7 @@ export const fetchDoubanData = async (username, onProgress) => {
       book: { ...bookStats, label: '图书' },
       music: { ...musicStats, label: '音乐' }
     },
-    userProfile
+    userProfile,
+    allItems
   };
 };
