@@ -131,6 +131,12 @@ const SummarySection = ({ title, data, color, bgColor, isSnapshotting }) => {
     return '看过';
   };
 
+  const StarIcon = ({ fill = "currentColor" }) => (
+    <svg viewBox="0 0 24 24" width="12" height="12" fill={fill} className="inline-block align-middle mb-0.5">
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+    </svg>
+  );
+
   return (
     <div className="flex flex-col md:flex-row gap-6 py-8 border-t border-stone-100 last:border-0">
       {/* Left: Category Name */}
@@ -157,7 +163,9 @@ const SummarySection = ({ title, data, color, bgColor, isSnapshotting }) => {
                     className="w-full rounded-t-sm transition-all duration-500 opacity-80 hover:opacity-100"
                     style={{ height: `${Math.max(height, 2)}%`, backgroundColor: bgColor }}
                   ></div>
-                  <div className="text-xs text-stone-400">{star}★</div>
+                  <div className="text-xs text-stone-400 whitespace-nowrap">
+                    {star}<StarIcon fill="#fbbf24" />
+                  </div>
                 </div>
               );
             })}
@@ -168,11 +176,16 @@ const SummarySection = ({ title, data, color, bgColor, isSnapshotting }) => {
       {/* Right: Recent Covers */}
       <div className="flex-1 overflow-hidden pb-2">
         <div className="text-sm text-stone-500 mb-3">最近标注</div>
-        <div className="grid grid-cols-[repeat(auto-fill,80px)] gap-4 h-[140px] overflow-hidden">
+        <div className="flex gap-4 flex-nowrap justify-start">
           {data.recent.slice(0, 5).map((item, i) => (
             <div 
               key={i} 
-              className="flex-shrink-0 w-20 flex flex-col gap-1 group" 
+              className={`flex-shrink-0 w-20 flex flex-col gap-1 group ${
+                i === 2 ? 'flex' :
+                i === 3 ? 'hidden min-[400px]:flex' : 
+                i === 4 ? 'hidden min-[500px]:flex' : 
+                'flex'
+              }`} 
               title={item.title}
             >
               <a href={item.url} target="_blank" rel="noopener noreferrer" className="block">
@@ -198,8 +211,8 @@ const SummarySection = ({ title, data, color, bgColor, isSnapshotting }) => {
                     </div>
                   )}
                 </div>
-                <div className="text-xs text-stone-600 w-full text-center leading-tight mt-1 px-1 group-hover:text-doubanBlue transition-colors break-words">
-                  {item.title.length > 12 ? item.title.slice(0, 11) + '...' : item.title}
+                <div className="text-xs text-stone-600 w-full text-center leading-tight mt-1 px-1 group-hover:text-doubanBlue transition-colors line-clamp-2 h-7 overflow-hidden">
+                  {item.title}
                 </div>
               </a>
             </div>
