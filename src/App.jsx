@@ -197,7 +197,10 @@ const SummarySection = ({ title, data, color, bgColor, isSnapshotting }) => {
                     <div className="w-full h-full flex items-center justify-center text-stone-300 text-xs">No Cover</div>
                   )}
                   {item.rating > 0 && (
-                    <div className="absolute top-1 right-1 bg-yellow-400 text-white text-[10px] px-1 rounded shadow">
+                    <div 
+                      className="absolute bg-yellow-400 text-white text-[10px] px-1 rounded shadow"
+                      style={{ top: '4px', right: '4px' }}
+                    >
                       {item.rating}★
                     </div>
                   )}
@@ -350,6 +353,8 @@ function App() {
         allowTaint: true,
         backgroundColor: '#f5f5f4',
         scale: 2,
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight,
       });
 
       const dataUrl = canvas.toDataURL('image/png');
