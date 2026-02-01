@@ -203,7 +203,7 @@ const SummarySection = ({ title, data, color, bgColor, isSnapshotting }) => {
                   )}
                 </div>
                 <div 
-                  className="text-sm text-stone-600 w-full text-center leading-tight mt-1 px-1 group-hover:text-doubanBlue transition-colors overflow-hidden"
+                  className="text-[11px] text-stone-600 w-full text-center leading-tight mt-1 px-1 group-hover:text-doubanBlue transition-colors overflow-hidden font-medium"
                   style={{
                     display: '-webkit-box',
                     WebkitLineClamp: '2',
@@ -234,7 +234,6 @@ function App() {
   const [isSnapshotting, setIsSnapshotting] = useState(false);
   const [error, setError] = useState('');
   const [hiddenSeries, setHiddenSeries] = useState([]);
-  const [isSharing, setIsSharing] = useState(false);
 
   const favoriteYears = useMemo(() => {
     if (!data || data.length === 0) return [];
@@ -336,44 +335,45 @@ function App() {
 
   const handleShare = async () => {
     try {
-      setIsSharing(true);
-      // Wait for 1s for the chart animation to finish
+      setIsSnapshotting(true);
+      // Wait 1s for chart animations to complete as requested
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       const element = document.querySelector('.min-h-screen');
-      if (!element) return;
+      if (!element) {
+        setIsSnapshotting(false);
+        return;
+      }
 
       const canvas = await html2canvas(element, {
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#f5f5f4',
         scale: 2,
-        windowWidth: element.scrollWidth,
-        windowHeight: element.scrollHeight,
       });
 
-      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-      const file = new File([blob], `dbanalyzer-${userProfile.name}.png`, { type: 'image/png' });
-
-      if (navigator.share && navigator.canShare({ files: [file] })) {
+      const dataUrl = canvas.toDataURL('image/png');
+      
+      // Check if mobile device for sharing
+      if (navigator.share && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+        const blob = await (await fetch(dataUrl)).blob();
+        const file = new File([blob], `dbanalyzer-${username}.png`, { type: 'image/png' });
         await navigator.share({
           files: [file],
-          title: '艺术年轮 - 我的书影音足迹',
-          text: `这是我 ${favoriteYears.join('，')} 年的书影音足迹，快来看看你的艺术年轮吧！`,
+          title: '艺术年轮',
+          text: '这是我的豆瓣艺术年轮，快来生成你的吧！',
         });
       } else {
-        // Fallback: download the image
+        // Desktop fallback: download
         const link = document.createElement('a');
-        link.download = `dbanalyzer-${userProfile.name}.png`;
-        link.href = canvas.toDataURL('image/png');
+        link.download = `dbanalyzer-${username}-${new Date().toISOString().split('T')[0]}.png`;
+        link.href = dataUrl;
         link.click();
-        alert('您的浏览器暂不支持直接分享，图片已为您保存到本地');
       }
     } catch (err) {
       console.error('Share failed:', err);
-      alert('分享失败，请稍后重试');
     } finally {
-      setIsSharing(false);
+      setIsSnapshotting(false);
     }
   };
 
@@ -430,26 +430,8 @@ function App() {
         <div className="w-full max-w-5xl bg-white p-8 rounded-3xl shadow-xl flex flex-col gap-12">
           {/* User Profile Section */}
           {userProfile && (
-            <div className="rounded-3xl flex flex-col overflow-hidden relative" style={{ backgroundColor: 'rgba(47, 164, 79, 0.08)' }}>
-              {/* Share Button / QR Code */}
-              <div className="absolute right-8 top-8 z-20">
-                {isSharing || isSnapshotting ? (
-                  <div className="flex flex-col items-center gap-1 bg-white p-2 rounded-lg shadow-sm">
-                    <QRCodeCanvas value="https://dbanalyzer.pages.dev/" size={64} />
-                    <span className="text-[10px] text-stone-400">艺术年轮</span>
-                  </div>
-                ) : (
-                  <button
-                    onClick={handleShare}
-                    className="flex items-center gap-2 px-4 py-2 bg-stone-800 text-white rounded-full hover:bg-stone-700 transition-colors shadow-md text-sm"
-                  >
-                    <span>📤</span>
-                    <span>分享我的结果</span>
-                  </button>
-                )}
-              </div>
-
-              <div className="p-8 pb-4 flex flex-col md:flex-row items-start gap-8">
+            <div className="rounded-3xl flex flex-col overflow-hidden" style={{ backgroundColor: 'rgba(47, 164, 79, 0.08)' }}>
+              <div className="p-8 pb-4 flex flex-col md:flex-row items-start gap-8 relative">
                 {/* Avatar & Name */}
                 <div className="flex flex-col items-center gap-3 min-w-[120px]">
                   <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-md">
@@ -470,13 +452,13 @@ function App() {
                 </div>
 
                 {/* Stats Text */}
-                <div className="flex-1 text-left">
-                  <div className="text-base text-stone-700 leading-tight font-medium flex flex-col gap-2">
-                    <div className="text-2xl font-bold text-stone-900 mb-2">
+                <div className="flex-1 text-left pt-0">
+                  <div className="text-base text-stone-700 leading-tight font-medium flex flex-col gap-3">
+                    <div className="text-3xl font-bold text-stone-900 mb-1">
                       你好！{userProfile.name}
                     </div>
-                    <div>
-                      共计标注 
+                    <div className="leading-relaxed">
+                      共计标注
                       电影 <span className="font-bold text-doubanBlue">{summary?.movie?.total || 0}</span> 部，
                       电视剧 <span className="font-bold text-purple-600">{summary?.tv?.total || 0}</span> 部，
                       图书 <span className="font-bold text-doubanGreen">{summary?.book?.total || 0}</span> 本，
@@ -487,15 +469,32 @@ function App() {
                     </div>
                   </div>
                 </div>
+
+                {/* Share Button / QR Code */}
+                <div className="md:absolute md:right-8 md:top-8 flex flex-col items-center gap-2">
+                  {isSnapshotting ? (
+                    <div className="flex flex-col items-center gap-1 bg-white p-2 rounded-xl shadow-sm">
+                      <QRCodeCanvas value="https://dbanalyzer.pages.dev/" size={80} />
+                      <span className="text-[10px] text-stone-400">扫码生成你的艺术年轮</span>
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={handleShare}
+                      className="px-6 py-2.5 bg-doubanGreen text-white rounded-full font-bold shadow-md hover:bg-opacity-90 transition-all flex items-center gap-2 group"
+                    >
+                      <span className="text-lg">✨</span>
+                      分享结果
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Cover Wall with Gradient Blur */}
               {favoriteCovers.length > 0 && (
-                <div className="relative w-full mt-2 overflow-hidden">
-                  <div className="grid grid-cols-5 md:grid-cols-10 gap-2 px-4 justify-items-center">
-                    {/* If mobile/narrow (md grid breaks), show 2 rows by mapping more or repeating */}
-                    {favoriteCovers.concat(favoriteCovers).slice(0, 20).map((item, idx) => (
-                      <div key={idx} className={`flex-shrink-0 w-16 h-24 md:w-20 md:h-28 bg-stone-100 rounded overflow-hidden shadow-sm ${idx >= 10 ? 'md:hidden' : ''}`}>
+                <div className="relative h-32 w-full mt-2 overflow-hidden">
+                  <div className="flex gap-2 px-4 justify-center">
+                    {favoriteCovers.map((item, idx) => (
+                      <div key={idx} className="flex-shrink-0 w-20 h-28 bg-stone-100 rounded overflow-hidden shadow-sm">
                         {item.cover ? (
                           <img 
                             src={`/api/proxy/image?url=${encodeURIComponent(item.cover)}&t=${Date.now()}`}
@@ -513,11 +512,10 @@ function App() {
                   <div 
                     className="absolute inset-0 pointer-events-none"
                     style={{
-                      background: 'linear-gradient(to bottom, rgba(244, 250, 246, 1) 0%, rgba(244, 250, 246, 0.8) 10%, rgba(244, 250, 246, 0) 30%)',
-                      backdropFilter: 'blur(2px)',
-                      WebkitBackdropFilter: 'blur(2px)',
-                      maskImage: 'linear-gradient(to bottom, black 0%, transparent 30%)',
-                      WebkitMaskImage: 'linear-gradient(to bottom, black 0%, transparent 30%)'
+                      backdropFilter: 'blur(12px)',
+                      WebkitBackdropFilter: 'blur(12px)',
+                      maskImage: 'linear-gradient(to bottom, black 0%, transparent 25%)',
+                      WebkitMaskImage: 'linear-gradient(to bottom, black 0%, transparent 25%)'
                     }}
                   />
                 </div>
@@ -529,7 +527,7 @@ function App() {
           <div className="relative pt-4">
             {/* Internal Chart Header: Title, Description, and Legend */}
             <div 
-              className="absolute left-8 top-8 z-10 pointer-events-none transition-transform duration-500"
+              className="absolute left-0 top-8 z-10 pointer-events-none transition-transform duration-500"
               style={{ transform: `translateY(${headerOffset}px)` }}
             >
               <h2 className="text-2xl font-bold text-stone-800 mb-1">喜好分布</h2>
