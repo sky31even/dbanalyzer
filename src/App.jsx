@@ -119,6 +119,29 @@ const CustomLegend = ({ hiddenSeries, toggleSeries }) => {
   );
 };
 
+const RatingBadge = ({ rating, isSnapshotting }) => {
+  if (rating <= 0) return null;
+  
+  if (isSnapshotting) {
+    return (
+      <div className="absolute top-1 right-1">
+        <svg width="24" height="14" viewBox="0 0 24 14">
+          <rect x="0" y="0" width="24" height="14" rx="2" fill="#fbbf24" />
+          <text x="12" y="10" fontSize="9" fill="white" fontFamily="sans-serif" textAnchor="middle" fontWeight="bold">
+            {rating}★
+          </text>
+        </svg>
+      </div>
+    );
+  }
+
+  return (
+    <div className="absolute top-1 right-1 bg-yellow-400 text-white text-[10px] px-1 rounded shadow font-bold">
+      {rating}★
+    </div>
+  );
+};
+
 const SummarySection = ({ title, data, color, bgColor, isSnapshotting }) => {
   if (!data) return null;
   
@@ -180,33 +203,23 @@ const SummarySection = ({ title, data, color, bgColor, isSnapshotting }) => {
               title={item.title}
             >
               <a href={item.url} target="_blank" rel="noopener noreferrer" className="block">
-                <div className="w-20 h-28 relative shadow-sm group-hover:shadow-md transition-shadow">
-                  {/* Image Container */}
-                  <div className="w-full h-full rounded overflow-hidden bg-stone-100">
-                    {item.cover ? (
-                      <img 
-                        src={`/api/proxy/image?url=${encodeURIComponent(item.cover)}&t=${Date.now()}`}
-                        alt={item.title} 
-                        className="w-full h-full object-cover"
-                        referrerPolicy="no-referrer"
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.style.display = 'none';
-                          e.target.parentNode.innerHTML = '<div class="w-full h-full flex items-center justify-center text-stone-300 text-xs">Load Failed</div>';
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-stone-300 text-xs">No Cover</div>
-                    )}
-                  </div>
-                  {/* Rating Badge - Absolute Zero with Padding to avoid displacement in screenshots */}
-                  {item.rating > 0 && (
-                    <div className="absolute top-0 right-0 p-1 pointer-events-none">
-                      <div className="bg-yellow-400 text-white text-[10px] px-1 rounded shadow-sm font-bold pointer-events-auto">
-                        {item.rating}★
-                      </div>
-                    </div>
+                <div className="w-20 h-28 bg-stone-100 rounded overflow-hidden shadow-sm group-hover:shadow-md transition-shadow relative">
+                  {item.cover ? (
+                    <img 
+                      src={`/api/proxy/image?url=${encodeURIComponent(item.cover)}&t=${Date.now()}`}
+                      alt={item.title} 
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.style.display = 'none';
+                        e.target.parentNode.innerHTML = '<div class="w-full h-full flex items-center justify-center text-stone-300 text-xs">Load Failed</div>';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-stone-300 text-xs">No Cover</div>
                   )}
+                  <RatingBadge rating={item.rating} isSnapshotting={isSnapshotting} />
                 </div>
                 <div 
                   className="text-[11px] text-stone-600 w-full text-center leading-tight mt-1 px-1 group-hover:text-doubanBlue transition-colors overflow-hidden font-medium"
