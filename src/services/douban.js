@@ -5,11 +5,12 @@ const DELAY_MS = 1000;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const fetchUrl = async (url) => {
+const fetchUrl = async (url, signal) => {
   try {
-    const response = await axios.get(url);
+    const response = await axios.get(url, { signal });
     return response.data;
   } catch (error) {
+    if (error.name === 'AbortError' || error.code === 'ERR_CANCELED') throw error;
     console.error(`Error fetching ${url}:`, error);
     return null;
   }
@@ -57,7 +58,7 @@ const parseRating = ($, el) => {
   return 0; // No rating
 };
 
-const fetchCategory = async (username, category, proxyPrefix, parseFn, onProgress) => {
+const fetchCategory = async (username, category, proxyPrefix, parseFn, onProgress, signal) => {
   let start = 0;
   let hasMore = true;
   const items = [];
@@ -71,7 +72,7 @@ const fetchCategory = async (username, category, proxyPrefix, parseFn, onProgres
     }
 
     const url = `${proxyPrefix}/people/${username}/collect?start=${start}&sort=time&rating=all&filter=all&mode=grid`;
-    const html = await fetchUrl(url);
+    const html = await fetchUrl(url, signal);
     
     if (!html) break;
 
@@ -211,9 +212,9 @@ const computeStats = (items, totalCount) => {
   };
 };
 
-const fetchUserProfile = async (username) => {
+const fetchUserProfile = async (username, signal) => {
   const url = `/api/douban/people/${username}/`;
-  const html = await fetchUrl(url);
+  const html = await fetchUrl(url, signal);
   if (!html) return null;
 
   const $ = cheerio.load(html);
@@ -232,12 +233,12 @@ const fetchUserProfile = async (username) => {
   return { registrationDate, name, avatar };
 };
 
-export const fetchDoubanData = async (username, onProgress) => {
-  const userProfile = await fetchUserProfile(username);
+export const fetchDoubanData = async (username, onProgress, signal) => {
+  const userProfile = await fetchUserProfile(username, signal);
   const [moviesAndTV, books, music] = await Promise.all([
-    fetchCategory(username, 'movie', '/api/movie', parseMovie, onProgress),
-    fetchCategory(username, 'book', '/api/book', parseBook, onProgress),
-    fetchCategory(username, 'music', '/api/music', parseMusic, onProgress)
+    fetchCategory(username, 'movie', '/api/movie', parseMovie, onProgress, signal),
+    fetchCategory(username, 'book', '/api/book', parseBook, onProgress, signal),
+    fetchCategory(username, 'music', '/api/music', parseMusic, onProgress, signal)
   ]);
 
   const movies = moviesAndTV.items.filter(i => i.type === 'movie');

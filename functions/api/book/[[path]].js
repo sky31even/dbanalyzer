@@ -1,3 +1,8 @@
+import { proxyDouban } from '../_proxyHelper.js';
+
+export async function onRequest(context) {
+  return proxyDouban(context.request, '/api/book', 'https://book.douban.com');
+}
 export async function onRequest(context) {
   const url = new URL(context.request.url);
   // Get the path after /api/book

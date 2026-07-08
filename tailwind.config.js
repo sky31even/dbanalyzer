@@ -10,7 +10,11 @@ module.exports = {
         doubanBlue: "#2AA3F4",
         doubanGreen: "#2FA44F",
         doubanPeach: "#F6C28B",
+        doubanPurple: "#7c3aed",
         doubanBg: "#EEF7F2"
+      },
+      screens: {
+        'xs': '480px',
       },
       fontFamily: {
         sans: [

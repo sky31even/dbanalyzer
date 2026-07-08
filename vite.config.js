@@ -4,6 +4,27 @@ import http from 'http'
 import https from 'https'
 import { URL } from 'url'
 
+const DOUBAN_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
+// Allowed domains for image proxy (SSRF protection)
+const ALLOWED_IMAGE_DOMAINS = [
+  'doubanio.com',
+  'douban.com',
+  'img1.doubanio.com',
+  'img2.doubanio.com',
+  'img3.doubanio.com',
+  'img9.doubanio.com',
+];
+
+function isAllowedImageUrl(targetUrl) {
+  try {
+    const urlObj = new URL(targetUrl);
+    return ALLOWED_IMAGE_DOMAINS.some(d => urlObj.hostname.endsWith(d));
+  } catch {
+    return false;
+  }
+}
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
@@ -26,13 +47,20 @@ export default defineConfig({
               return;
             }
 
+            // SSRF protection: only allow Douban image domains
+            if (!isAllowedImageUrl(targetUrl)) {
+              res.statusCode = 403;
+              res.end('Forbidden domain');
+              return;
+            }
+
             // Determine protocol
             const client = targetUrl.startsWith('https') ? https : http;
             
             const proxyReq = client.request(targetUrl, {
               headers: {
                 'Referer': 'https://www.douban.com',
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                'User-Agent': DOUBAN_UA
               }
             }, (proxyRes) => {
               res.writeHead(proxyRes.statusCode, proxyRes.headers);
